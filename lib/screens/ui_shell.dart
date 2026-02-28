@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../debug_log.dart';
 import '../theme/app_colors.dart';
 
 /// Shared footer with logo, social icons, address, and copyright.
@@ -79,11 +80,23 @@ class UiShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canPop = Navigator.of(context).canPop();
+    // #region agent log
     final width = MediaQuery.sizeOf(context).width;
     final maxContentWidth = useWideLayout
         ? (width * 0.85).clamp(760.0, double.infinity)
         : 760.0;
+    debugLog(
+      location: 'ui_shell.dart:UiShell.build',
+      message: 'UiShell body build',
+      data: {
+        'width': width,
+        'maxContentWidth': maxContentWidth,
+        'useWideLayout': useWideLayout,
+      },
+      hypothesisId: 'H1',
+    );
+    // #endregion
+    final canPop = Navigator.of(context).canPop();
 
     return Scaffold(
       appBar: AppBar(
@@ -108,15 +121,29 @@ class UiShell extends StatelessWidget {
       floatingActionButton: floatingActionButton,
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxContentWidth),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: child,
-                  ),
+              child: ClipRect(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final w = useWideLayout
+                        ? (constraints.maxWidth * 0.85).clamp(760.0, double.infinity)
+                        : 760.0;
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: w,
+                          height: constraints.maxHeight,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: child,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),

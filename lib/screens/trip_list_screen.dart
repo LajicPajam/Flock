@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
+import '../debug_log.dart';
 import '../models/city.dart';
 import '../models/trip.dart' show Trip;
 import '../services/location_service.dart';
@@ -363,8 +364,19 @@ class _TripListScreenState extends State<TripListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // #region agent log
     final appState = context.watch<AppState>();
     final filteredTrips = _filteredTrips(appState.trips);
+    debugLog(
+      location: 'trip_list_screen.dart:TripListScreen.build',
+      message: 'Trip list build branch',
+      data: {
+        'tripsEmpty': appState.trips.isEmpty,
+        'filteredCount': filteredTrips.length,
+      },
+      hypothesisId: 'H2',
+    );
+    // #endregion
 
     return UiShell(
       useWideLayout: true,
@@ -436,6 +448,7 @@ class _TripListScreenState extends State<TripListScreen> {
         },
         child: appState.trips.isEmpty
             ? ListView(
+                padding: const EdgeInsets.only(bottom: 24),
                 children: [
                   const _AvailableTripsHero(),
                   const SizedBox(height: 24),
@@ -446,6 +459,7 @@ class _TripListScreenState extends State<TripListScreen> {
                 ],
               )
             : ListView(
+                padding: const EdgeInsets.only(bottom: 24),
                 children: [
                   const _AvailableTripsHero(),
                   const SizedBox(height: 24),
@@ -803,7 +817,19 @@ class _FindATripBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // #region agent log
         final useRow = constraints.maxWidth >= 560;
+        debugLog(
+          location: 'trip_list_screen.dart:_FindATripBar',
+          message: 'FindATripBar constraints',
+          data: {
+            'maxWidth': constraints.maxWidth,
+            'maxHeightInfinite': constraints.maxHeight.isInfinite,
+            'useRow': useRow,
+          },
+          hypothesisId: 'H2',
+        );
+        // #endregion
         final content = Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -833,19 +859,25 @@ class _FindATripBar extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    OutlinedButton.icon(
-                      onPressed: onPickDepartureDate,
-                      icon: const Icon(Icons.event, size: 20),
-                      label: Text(
-                        departureLabel,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 14),
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: OutlinedButton.icon(
+                        onPressed: onPickDepartureDate,
+                        icon: const Icon(Icons.event, size: 20),
+                        label: Text(
+                          departureLabel,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 14),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: onClearFilters,
-                      child: const Text('Clear'),
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: TextButton(
+                        onPressed: onClearFilters,
+                        child: const Text('Clear'),
+                      ),
                     ),
                   ],
                 )
@@ -890,8 +922,9 @@ class _FindATripBar extends StatelessWidget {
                 ),
         );
         // ListView gives unbounded height; constrain horizontal bar so Row gets bounded constraints.
+        // Height must fit container padding (32) + _FilterMapButton padding (28) + label + 4 + value.
         if (useRow) {
-          return SizedBox(height: 80, child: content);
+          return SizedBox(height: 120, child: content);
         }
         return content;
       },
@@ -1315,7 +1348,19 @@ class _AvailableTripsHero extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        // #region agent log
         final useRow = constraints.maxWidth >= 500;
+        debugLog(
+          location: 'trip_list_screen.dart:_AvailableTripsHero',
+          message: 'Hero constraints',
+          data: {
+            'maxWidth': constraints.maxWidth,
+            'maxHeightInfinite': constraints.maxHeight.isInfinite,
+            'useRow': useRow,
+          },
+          hypothesisId: 'H2',
+        );
+        // #endregion
         return SizedBox(
           height: heroHeight,
           child: useRow
@@ -1360,6 +1405,7 @@ class _AvailableTripsHero extends StatelessWidget {
                   ],
                 )
               : Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Padding(
@@ -1377,7 +1423,8 @@ class _AvailableTripsHero extends StatelessWidget {
                             ),
                       ),
                     ),
-                    Expanded(
+                    SizedBox(
+                      height: 120,
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
                         child: ClipRRect(

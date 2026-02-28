@@ -128,13 +128,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             overview.completedRides > 0 ||
             overview.totalDistanceKm > 0);
     final co2SavedGrams = hasRealData
-        ? overview!.totalCo2SavedGrams
+        ? overview.totalCo2SavedGrams
         : _demoCo2SavedGrams;
     final completedRides = hasRealData
-        ? overview!.completedRides
+        ? overview.completedRides
         : _demoCompletedRides;
     final totalDistanceKm = hasRealData
-        ? overview!.totalDistanceKm
+        ? overview.totalDistanceKm
         : _demoDistanceKm;
     final totalKg = (co2SavedGrams / 1000).toStringAsFixed(1);
 
