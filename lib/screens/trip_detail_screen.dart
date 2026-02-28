@@ -10,6 +10,7 @@ import '../state/app_state.dart';
 import 'create_trip_screen.dart';
 import 'leave_review_screen.dart';
 import '../theme/app_colors.dart';
+import '../utils/phone_formatter.dart';
 import '../widgets/tier_badge.dart';
 import 'messages_screen.dart';
 import 'ui_shell.dart';
@@ -194,7 +195,6 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     await _reload();
   }
 
-
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -247,14 +247,44 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${origin.label} -> ${destination.label}',
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              origin.label,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: AppColors.secondaryGreen,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: AppColors.primaryGreen,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              destination.label,
+                              textAlign: TextAlign.right,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       Text('Departure: ${formatDepartureTime(trip.departureTime)}'),
                       Text(
                         'Estimated arrival: ${formatDepartureTime(estimatedArrival)}',
+                      Text(
+                        'Departure: ${formatDepartureTime(trip.departureTime)}',
                       ),
                       Text('Seats available: ${trip.seatsAvailable}'),
                       Text('Status: ${trip.status.toUpperCase()}'),
@@ -338,7 +368,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                     ),
                                   ],
                                 ),
-                                Text('Phone: ${trip.driverPhoneNumber}'),
+                                Text(
+                                  'Phone: ${formatPhoneNumber(trip.driverPhoneNumber)}',
+                                ),
                               ],
                             ),
                           ),
@@ -382,6 +414,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
               if (!isDriver) ...[
                 Card(
                   child: Padding(
@@ -453,6 +486,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
               ],
               if (isDriver) ...[
                 Card(
@@ -544,6 +578,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
               ],
               if (canOpenMessages)
                 FilledButton.icon(
@@ -819,4 +854,3 @@ class _PassengerHoverName extends StatelessWidget {
     );
   }
 }
-

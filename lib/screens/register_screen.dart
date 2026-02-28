@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
+import '../utils/phone_formatter.dart';
 import 'settings_screen.dart';
 import 'ui_shell.dart';
 
@@ -105,7 +106,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      phoneNumber: _phoneController.text.trim(),
+      phoneNumber: digitsOnlyPhone(_phoneController.text),
       profilePhotoUrl: profilePhotoUrl,
       major: _majorController.text.trim().isEmpty
           ? null
@@ -162,22 +163,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ],
       child: ListView(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Center(
-            child: Image.asset(
-              'assets/flock_logo.png',
-              height: 60,
-              fit: BoxFit.contain,
+            child: FractionallySizedBox(
+              widthFactor: 1,
+              child: Image.asset(
+                'assets/flock_logo.png',
+                height: 132,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
           const SizedBox(height: 16),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(22),
               child: Form(
                 key: _formKey,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'Account Details',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Use a clear profile photo so drivers and riders can recognize you.',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                    ),
+                    const SizedBox(height: 18),
                     TextFormField(
                       controller: _nameController,
                       decoration: const InputDecoration(
@@ -216,6 +235,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      inputFormatters: [UsPhoneTextInputFormatter()],
                       decoration: const InputDecoration(
                         labelText: 'Phone Number',
                         border: OutlineInputBorder(),
@@ -267,9 +288,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 8),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          radius: 28,
+                          radius: 30,
                           backgroundImage: _photoBytes == null
                               ? null
                               : MemoryImage(_photoBytes!),
@@ -283,7 +305,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             onPressed: _uploadingPhoto ? null : _pickPhoto,
                             icon: const Icon(Icons.photo_library_outlined),
                             label: Text(
-                              _photoName == null ? 'Choose Photo' : _photoName!,
+                              _photoName == null ? 'Upload Photo' : _photoName!,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
