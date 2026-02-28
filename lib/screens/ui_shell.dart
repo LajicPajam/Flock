@@ -67,16 +67,23 @@ class UiShell extends StatelessWidget {
     required this.child,
     this.actions = const [],
     this.floatingActionButton,
+    /// When true, content uses 70–85% of viewport width for a more open layout (e.g. Available Trips).
+    this.useWideLayout = false,
   });
 
   final String title;
   final Widget child;
   final List<Widget> actions;
   final Widget? floatingActionButton;
+  final bool useWideLayout;
 
   @override
   Widget build(BuildContext context) {
     final canPop = Navigator.of(context).canPop();
+    final width = MediaQuery.sizeOf(context).width;
+    final maxContentWidth = useWideLayout
+        ? (width * 0.85).clamp(760.0, double.infinity)
+        : 760.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -105,7 +112,7 @@ class UiShell extends StatelessWidget {
             Expanded(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
+                  constraints: BoxConstraints(maxWidth: maxContentWidth),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: child,

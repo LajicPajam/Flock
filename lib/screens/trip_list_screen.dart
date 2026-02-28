@@ -367,6 +367,7 @@ class _TripListScreenState extends State<TripListScreen> {
     final filteredTrips = _filteredTrips(appState.trips);
 
     return UiShell(
+      useWideLayout: true,
       title: 'Available Trips',
       actions: [
         PopupMenuButton<_TripMenuAction>(
@@ -471,61 +472,22 @@ class _TripListScreenState extends State<TripListScreen> {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Find a Trip',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 12),
-                          _FilterMapButton(
-                            label: 'Starting Area',
-                            value: _originFilter?.label ?? 'Anywhere',
-                            icon: Icons.trip_origin,
-                            onPressed: _pickOriginOnMap,
-                          ),
-                          const SizedBox(height: 12),
-                          _FilterMapButton(
-                            label: 'Destination Area',
-                            value: _destinationFilter?.label ?? 'Anywhere',
-                            icon: Icons.location_on_outlined,
-                            onPressed: _pickDestinationOnMap,
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: _pickDepartureDate,
-                              icon: const Icon(Icons.event),
-                              label: Text(
-                                _departureDateFilter == null
-                                    ? 'Any departure date'
-                                    : 'Leaving: ${_dateLabel(_departureDateFilter!)}',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _originFilter = null;
-                                  _destinationFilter = null;
-                                  _departureDateFilter = null;
-                                });
-                              },
-                              child: const Text('Clear Filters'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  _FindATripBar(
+                    originLabel: _originFilter?.label ?? 'Anywhere',
+                    destinationLabel: _destinationFilter?.label ?? 'Anywhere',
+                    departureLabel: _departureDateFilter == null
+                        ? 'Any date'
+                        : _dateLabel(_departureDateFilter!),
+                    onPickOrigin: _pickOriginOnMap,
+                    onPickDestination: _pickDestinationOnMap,
+                    onPickDepartureDate: _pickDepartureDate,
+                    onClearFilters: () {
+                      setState(() {
+                        _originFilter = null;
+                        _destinationFilter = null;
+                        _departureDateFilter = null;
+                      });
+                    },
                   ),
                   const SizedBox(height: 18),
                   if (filteredTrips.isEmpty)
@@ -814,6 +776,119 @@ class _InfoPill extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FindATripBar extends StatelessWidget {
+  const _FindATripBar({
+    required this.originLabel,
+    required this.destinationLabel,
+    required this.departureLabel,
+    required this.onPickOrigin,
+    required this.onPickDestination,
+    required this.onPickDepartureDate,
+    required this.onClearFilters,
+  });
+
+  final String originLabel;
+  final String destinationLabel;
+  final String departureLabel;
+  final VoidCallback onPickOrigin;
+  final VoidCallback onPickDestination;
+  final VoidCallback onPickDepartureDate;
+  final VoidCallback onClearFilters;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useRow = constraints.maxWidth >= 560;
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.subtleBorder),
+          ),
+          child: useRow
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: _FilterMapButton(
+                        label: 'Starting Area',
+                        value: originLabel,
+                        icon: Icons.trip_origin,
+                        onPressed: onPickOrigin,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _FilterMapButton(
+                        label: 'Destination Area',
+                        value: destinationLabel,
+                        icon: Icons.location_on_outlined,
+                        onPressed: onPickDestination,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    OutlinedButton.icon(
+                      onPressed: onPickDepartureDate,
+                      icon: const Icon(Icons.event, size: 20),
+                      label: Text(
+                        departureLabel,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: onClearFilters,
+                      child: const Text('Clear'),
+                    ),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _FilterMapButton(
+                      label: 'Starting Area',
+                      value: originLabel,
+                      icon: Icons.trip_origin,
+                      onPressed: onPickOrigin,
+                    ),
+                    const SizedBox(height: 12),
+                    _FilterMapButton(
+                      label: 'Destination Area',
+                      value: destinationLabel,
+                      icon: Icons.location_on_outlined,
+                      onPressed: onPickDestination,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: onPickDepartureDate,
+                            icon: const Icon(Icons.event),
+                            label: Text(
+                              departureLabel,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: onClearFilters,
+                          child: const Text('Clear Filters'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+        );
+      },
     );
   }
 }
