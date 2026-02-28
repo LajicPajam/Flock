@@ -3,6 +3,8 @@ const express = require('express');
 const {
   createTripHandler,
   updateTripHandler,
+  cancelTripHandler,
+  completeTripHandler,
   listTripsHandler,
   getTripByIdHandler,
 } = require('../controllers/tripController');
@@ -19,6 +21,8 @@ const router = express.Router();
 router.get('/', listTripsHandler);
 router.post('/', authRequired, createTripHandler);
 router.put('/:id', authRequired, updateTripHandler);
+router.post('/:id/cancel', authRequired, cancelTripHandler);
+router.post('/:id/complete', authRequired, completeTripHandler);
 router.get('/:id', getTripByIdHandler);
 router.post('/:id/request', authRequired, createRideRequestHandler);
 router.get('/:id/messages', authRequired, getMessagesHandler);

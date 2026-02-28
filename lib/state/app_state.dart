@@ -1,31 +1,55 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/auth_user.dart';
 import '../models/carbon_stats.dart';
+import '../models/notification_summary.dart';
+import '../models/request_summary.dart';
 import '../models/trip.dart';
 import '../services/api.dart';
 
 class AppState extends ChangeNotifier {
-  AppState({ApiService? apiService}) : _api = apiService ?? ApiService();
+  AppState({ApiService? apiService}) : _api = apiService ?? ApiService() {
+    _restoreSession();
+  }
+
+  static const _tokenKey = 'session_token';
+  static const _userKey = 'session_user';
 
   final ApiService _api;
 
   String? _token;
   AuthUser? _currentUser;
   List<Trip> _trips = [];
+  List<Trip> _myTrips = [];
+  List<RequestSummary> _myRequests = [];
+  NotificationSummary _notifications = NotificationSummary(
+    notifications: const [],
+    unreadCount: 0,
+  );
   bool _isLoading = false;
+  bool _isReady = false;
   String? _errorMessage;
   CarbonStats? _carbonStats;
 
   bool get isAuthenticated => _token != null;
   bool get isLoading => _isLoading;
+  bool get isReady => _isReady;
   String? get errorMessage => _errorMessage;
   AuthUser? get currentUser => _currentUser;
   String? get token => _token;
   List<Trip> get trips => _trips;
   CarbonStats? get carbonStats => _carbonStats;
+  List<Trip> get myTrips => _myTrips;
+  List<RequestSummary> get myRequests => _myRequests;
+  NotificationSummary get notifications => _notifications;
+  CarbonStats? get carbonStats => _carbonStats;
+  List<Trip> get myTrips => _myTrips;
+  List<RequestSummary> get myRequests => _myRequests;
+  NotificationSummary get notifications => _notifications;
 
   void clearError() {
     _errorMessage = null;
@@ -63,7 +87,8 @@ class AppState extends ChangeNotifier {
       );
       _token = result.token;
       _currentUser = result.user;
-      await loadTrips();
+      await _persistSession();
+      await _refreshSignedInState();
     });
   }
 
@@ -92,6 +117,7 @@ class AppState extends ChangeNotifier {
       carDescription: carDescription,
     );
     _currentUser = user;
+    await _persistSession();
     notifyListeners();
   }
 
@@ -100,7 +126,8 @@ class AppState extends ChangeNotifier {
       final result = await _api.login(email: email, password: password);
       _token = result.token;
       _currentUser = result.user;
-      await loadTrips();
+      await _persistSession();
+      await _refreshSignedInState();
     });
   }
 
@@ -119,6 +146,7 @@ class AppState extends ChangeNotifier {
     required String destinationCity,
     required DateTime departureTime,
     required int seatsAvailable,
+    required String meetingSpot,
     required String notes,
   }) async {
     await _api.createTrip(
@@ -127,9 +155,10 @@ class AppState extends ChangeNotifier {
       destinationCity: destinationCity,
       departureTime: departureTime,
       seatsAvailable: seatsAvailable,
+      meetingSpot: meetingSpot,
       notes: notes,
     );
-    await loadTrips();
+    await _refreshSignedInState();
   }
 
   Future<void> updateTrip({
@@ -138,6 +167,7 @@ class AppState extends ChangeNotifier {
     required String destinationCity,
     required DateTime departureTime,
     required int seatsAvailable,
+    required String meetingSpot,
     required String notes,
   }) async {
     await _api.updateTrip(
@@ -147,9 +177,20 @@ class AppState extends ChangeNotifier {
       destinationCity: destinationCity,
       departureTime: departureTime,
       seatsAvailable: seatsAvailable,
+      meetingSpot: meetingSpot,
       notes: notes,
     );
-    await loadTrips();
+    await _refreshSignedInState();
+  }
+
+  Future<void> cancelTrip(int tripId) async {
+    await _api.cancelTrip(token: _requireToken(), tripId: tripId);
+    await _refreshSignedInState();
+  }
+
+  Future<void> completeTrip(int tripId) async {
+    await _api.completeTrip(token: _requireToken(), tripId: tripId);
+    await _refreshSignedInState();
   }
 
   Future<void> requestSeat({
@@ -161,14 +202,52 @@ class AppState extends ChangeNotifier {
       tripId: tripId,
       message: message,
     );
+    await loadActivity();
+    await loadNotifications();
   }
 
   Future<void> acceptRequest(int requestId) async {
     await _api.acceptRequest(token: _requireToken(), requestId: requestId);
+    await _refreshSignedInState();
   }
 
   Future<void> rejectRequest(int requestId) async {
     await _api.rejectRequest(token: _requireToken(), requestId: requestId);
+    await _refreshSignedInState();
+  }
+
+  Future<void> withdrawRequest(int requestId) async {
+    await _api.withdrawRequest(token: _requireToken(), requestId: requestId);
+    await _refreshSignedInState();
+  }
+
+  Future<void> loadActivity() async {
+    final token = _requireToken();
+    final results = await Future.wait<dynamic>([
+      _api.fetchMyTrips(token: token),
+      _api.fetchMyRequests(token: token),
+    ]);
+    _myTrips = results[0] as List<Trip>;
+    _myRequests = results[1] as List<RequestSummary>;
+    notifyListeners();
+  }
+
+  Future<void> loadNotifications() async {
+    _notifications = await _api.fetchNotifications(token: _requireToken());
+    notifyListeners();
+  }
+
+  Future<void> markNotificationRead(int notificationId) async {
+    await _api.markNotificationRead(
+      token: _requireToken(),
+      notificationId: notificationId,
+    );
+    await loadNotifications();
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    await _api.markAllNotificationsRead(token: _requireToken());
+    await loadNotifications();
   }
 
   Future<MessagesResult> loadMessages({
@@ -198,6 +277,7 @@ class AppState extends ChangeNotifier {
   Future<void> refreshCurrentUser() async {
     final user = await _api.fetchCurrentUser(token: _requireToken());
     _currentUser = user;
+    await _persistSession();
     notifyListeners();
   }
 
@@ -232,6 +312,7 @@ class AppState extends ChangeNotifier {
       carDescription: carDescription,
     );
     _currentUser = user;
+    await _persistSession();
     notifyListeners();
   }
 
@@ -258,8 +339,17 @@ class AppState extends ChangeNotifier {
     _token = null;
     _currentUser = null;
     _trips = [];
+    _myTrips = [];
+    _myRequests = [];
+    _notifications = NotificationSummary(
+      notifications: const [],
+      unreadCount: 0,
+    );
     _errorMessage = null;
     _carbonStats = null;
+    _clearPersistedSession();
+    _carbonStats = null;
+    _clearPersistedSession();
     notifyListeners();
   }
 
@@ -286,5 +376,95 @@ class AppState extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _restoreSession() async {
+    try {
+      SharedPreferences? prefs;
+
+      try {
+        prefs = await SharedPreferences.getInstance();
+      } catch (_) {
+        _isReady = true;
+        notifyListeners();
+        return;
+      }
+
+      final savedToken = prefs.getString(_tokenKey);
+      final savedUser = prefs.getString(_userKey);
+
+      if (savedToken != null && savedUser != null) {
+        _token = savedToken;
+        _currentUser = AuthUser.fromJson(
+          jsonDecode(savedUser) as Map<String, dynamic>,
+        );
+        notifyListeners();
+
+        try {
+          await _refreshSignedInState();
+        } catch (_) {
+          // Keep the stored session so the user stays signed in even if
+          // the backend is momentarily unavailable during app startup.
+        }
+      }
+    } finally {
+      _isReady = true;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _refreshSignedInState() async {
+    if (_token == null) {
+      return;
+    }
+
+    final token = _requireToken();
+    final results = await Future.wait<dynamic>([
+      _api.fetchTrips(token: token),
+      _api.fetchCurrentUser(token: token),
+      _api.fetchMyTrips(token: token),
+      _api.fetchMyRequests(token: token),
+      _api.fetchNotifications(token: token),
+    ]);
+
+    _trips = results[0] as List<Trip>;
+    _currentUser = results[1] as AuthUser;
+    _myTrips = results[2] as List<Trip>;
+    _myRequests = results[3] as List<RequestSummary>;
+    _notifications = results[4] as NotificationSummary;
+    await _persistSession();
+    notifyListeners();
+  }
+
+  Future<void> _persistSession() async {
+    final token = _token;
+    final user = _currentUser;
+    SharedPreferences? prefs;
+
+    try {
+      prefs = await SharedPreferences.getInstance();
+    } catch (_) {
+      return;
+    }
+
+    if (token == null || user == null) {
+      await prefs.remove(_tokenKey);
+      await prefs.remove(_userKey);
+      return;
+    }
+
+    await prefs.setString(_tokenKey, token);
+    await prefs.setString(_userKey, jsonEncode(user.toJson()));
+  }
+
+  void _clearPersistedSession() {
+    SharedPreferences.getInstance()
+        .then((prefs) async {
+          await prefs.remove(_tokenKey);
+          await prefs.remove(_userKey);
+        })
+        .catchError((_) {
+          return null;
+        });
   }
 }

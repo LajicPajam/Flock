@@ -4,9 +4,13 @@ import 'package:provider/provider.dart';
 import '../models/city.dart';
 import '../models/trip.dart';
 import '../state/app_state.dart';
+import '../theme/app_colors.dart';
 import '../widgets/tier_badge.dart';
 import 'create_trip_screen.dart';
+import 'my_activity_screen.dart';
+import 'notifications_screen.dart';
 import 'profile_screen.dart';
+import 'settings_screen.dart';
 import 'trip_detail_screen.dart';
 import 'ui_shell.dart';
 
@@ -26,12 +30,18 @@ class _TripListScreenState extends State<TripListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AppState>().loadTrips();
+      final appState = context.read<AppState>();
+      appState.loadTrips();
+      appState.loadActivity();
+      appState.loadNotifications();
     });
   }
 
   List<Trip> _filteredTrips(List<Trip> trips) {
     return trips.where((trip) {
+      if (trip.isHistory) {
+        return false;
+      }
       final matchesOrigin =
           _originFilter == null || trip.originCity == _originFilter!.apiValue;
       final matchesDestination =
@@ -85,6 +95,39 @@ class _TripListScreenState extends State<TripListScreen> {
     });
   }
 
+  Future<void> _handleMenuSelection(_TripMenuAction action) async {
+    switch (action) {
+      case _TripMenuAction.activity:
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const MyActivityScreen()),
+        );
+        return;
+      case _TripMenuAction.notifications:
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
+        );
+        return;
+      case _TripMenuAction.profile:
+        final appState = context.read<AppState>();
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const ProfileScreen()));
+        if (!mounted) {
+          return;
+        }
+        await appState.refreshCurrentUser();
+        return;
+      case _TripMenuAction.settings:
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
+        return;
+      case _TripMenuAction.logout:
+        context.read<AppState>().logout();
+        return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -93,24 +136,41 @@ class _TripListScreenState extends State<TripListScreen> {
     return UiShell(
       title: 'Available Trips',
       actions: [
-        IconButton(
-          onPressed: () async {
-            final appState = context.read<AppState>();
-            await Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const ProfileScreen()),
-            );
-            if (!mounted) {
-              return;
-            }
-            await appState.refreshCurrentUser();
-          },
-          icon: const Icon(Icons.person),
-          tooltip: 'Profile',
-        ),
-        IconButton(
-          onPressed: appState.logout,
-          icon: const Icon(Icons.logout),
-          tooltip: 'Log out',
+        PopupMenuButton<_TripMenuAction>(
+          tooltip: 'Menu',
+          icon: const Icon(Icons.menu),
+          onSelected: _handleMenuSelection,
+          itemBuilder: (context) => [
+            PopupMenuItem<_TripMenuAction>(
+              value: _TripMenuAction.activity,
+              child: _MenuRow(
+                icon: Icons.view_list,
+                label: 'My Activity',
+                count: appState.myRequests.length,
+              ),
+            ),
+            PopupMenuItem<_TripMenuAction>(
+              value: _TripMenuAction.notifications,
+              child: _MenuRow(
+                icon: Icons.notifications_outlined,
+                label: 'Notifications',
+                count: appState.notifications.totalCount,
+              ),
+            ),
+            const PopupMenuItem<_TripMenuAction>(
+              value: _TripMenuAction.profile,
+              child: _MenuRow(icon: Icons.person, label: 'Profile'),
+            ),
+            const PopupMenuItem<_TripMenuAction>(
+              value: _TripMenuAction.settings,
+              child: _MenuRow(icon: Icons.settings, label: 'Settings'),
+            ),
+            const PopupMenuDivider(),
+            const PopupMenuItem<_TripMenuAction>(
+              value: _TripMenuAction.logout,
+              child: _MenuRow(icon: Icons.logout, label: 'Log Out'),
+            ),
+          ],
         ),
       ],
       floatingActionButton: FloatingActionButton.extended(
@@ -128,7 +188,12 @@ class _TripListScreenState extends State<TripListScreen> {
         label: const Text('Create Trip'),
       ),
       child: RefreshIndicator(
-        onRefresh: () => context.read<AppState>().loadTrips(),
+        onRefresh: () async {
+          final appState = context.read<AppState>();
+          await appState.loadTrips();
+          await appState.loadActivity();
+          await appState.loadNotifications();
+        },
         child: appState.trips.isEmpty
             ? ListView(
                 children: const [
@@ -287,12 +352,24 @@ class _TripCard extends StatelessWidget {
                   TierBadge(carbonSavedGrams: trip.driverCarbonSavedGrams),
                 ],
               ),
+              Text(
+                trip.driverReviewCount == 0
+                    ? 'New driver'
+                    : 'Rating: ${trip.driverAverageRating.toStringAsFixed(1)} (${trip.driverReviewCount})',
+              ),
               Text('Leaves: ${trip.departureTime.toLocal()}'),
               Text('Seats: ${trip.seatsAvailable}'),
             ],
           ),
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _StatusChip(status: trip.status),
+            const SizedBox(height: 8),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -300,6 +377,80 @@ class _TripCard extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+enum _TripMenuAction { activity, notifications, profile, settings, logout }
+
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({required this.icon, required this.label, this.count = 0});
+
+  final IconData icon;
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20),
+        const SizedBox(width: 12),
+        Expanded(child: Text(label)),
+        if (count > 0)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primaryAccent,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            constraints: const BoxConstraints(minWidth: 20),
+            child: Text(
+              count > 99 ? '99+' : '$count',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    Color backgroundColor = AppColors.secondaryGreen;
+    Color textColor = AppColors.textInk;
+
+    if (status == 'full') {
+      backgroundColor = const Color(0xFFFFE8B5);
+    } else if (status == 'cancelled') {
+      backgroundColor = const Color(0xFFF8D7DA);
+      textColor = const Color(0xFF7A1C1C);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(
+          color: textColor,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

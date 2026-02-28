@@ -101,6 +101,54 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     }
   }
 
+  Future<void> _withdrawRequest(int requestId) async {
+    try {
+      await context.read<AppState>().withdrawRequest(requestId);
+      await _reload();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    }
+  }
+
+  Future<void> _cancelTrip(int tripId) async {
+    try {
+      await context.read<AppState>().cancelTrip(tripId);
+      await _reload();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    }
+  }
+
+  Future<void> _completeTrip(int tripId) async {
+    try {
+      await context.read<AppState>().completeTrip(tripId);
+      await _reload();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    }
+  }
+
   Future<void> _openReview({
     required int revieweeId,
     required String revieweeName,
@@ -159,6 +207,11 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           final isDriver = appState.currentUser?.id == trip.driverId;
           final requestAccepted = trip.viewerRequest?.isAccepted ?? false;
           final canOpenMessages = isDriver || requestAccepted;
+          final canRequestSeat =
+              !isDriver &&
+              trip.viewerRequest == null &&
+              !trip.isCancelled &&
+              !trip.isFull;
           final tripInPast = trip.departureTime.toLocal().isBefore(
             DateTime.now(),
           );
@@ -185,13 +238,47 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                       const SizedBox(height: 8),
                       Text('Departure: ${trip.departureTime.toLocal()}'),
                       Text('Seats available: ${trip.seatsAvailable}'),
+                      Text('Status: ${trip.status.toUpperCase()}'),
+                      if (!isDriver && trip.driverReviewCount > 0)
+                        Text(
+                          'Driver rating: ${trip.driverAverageRating.toStringAsFixed(1)} (${trip.driverReviewCount} reviews)',
+                        ),
                       if (isDriver) ...[
                         const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: () => _editTrip(trip),
-                          icon: const Icon(Icons.edit),
-                          label: const Text('Edit This Trip'),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: trip.isCancelled
+                                  ? null
+                                  : () => _editTrip(trip),
+                              icon: const Icon(Icons.edit),
+                              label: const Text('Edit This Trip'),
+                            ),
+                            FilledButton.tonalIcon(
+                              onPressed: trip.isCancelled
+                                  ? null
+                                  : () => _cancelTrip(trip.id),
+                              icon: const Icon(Icons.cancel_outlined),
+                              label: const Text('Cancel Trip'),
+                            ),
+                            FilledButton.tonalIcon(
+                              onPressed:
+                                  trip.isCancelled ||
+                                      trip.isCompleted ||
+                                      !tripInPast
+                                  ? null
+                                  : () => _completeTrip(trip.id),
+                              icon: const Icon(Icons.check_circle_outline),
+                              label: const Text('Mark Completed'),
+                            ),
+                          ],
                         ),
+                      ],
+                      if (trip.meetingSpot.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text('Meeting spot: ${trip.meetingSpot}'),
                       ],
                       if (trip.notes.isNotEmpty) ...[
                         const SizedBox(height: 8),
@@ -281,8 +368,16 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                               : 'Request Status: ${trip.viewerRequest!.status}',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
+                        if (trip.viewerRequest == null && trip.isCancelled) ...[
+                          const SizedBox(height: 12),
+                          const Text('This trip has been cancelled.'),
+                        ] else if (trip.viewerRequest == null &&
+                            trip.isFull) ...[
+                          const SizedBox(height: 12),
+                          const Text('This trip is currently full.'),
+                        ],
                         const SizedBox(height: 12),
-                        if (trip.viewerRequest == null) ...[
+                        if (canRequestSeat) ...[
                           TextField(
                             controller: _requestController,
                             maxLines: 3,
@@ -301,8 +396,19 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                               ),
                             ),
                           ),
-                        ] else
+                        ],
+                        if (!canRequestSeat && trip.viewerRequest != null) ...[
                           Text(trip.viewerRequest!.message),
+                          if (trip.viewerRequest!.status != 'rejected' &&
+                              !tripInPast) ...[
+                            const SizedBox(height: 12),
+                            OutlinedButton(
+                              onPressed: () =>
+                                  _withdrawRequest(trip.viewerRequest!.id),
+                              child: const Text('Withdraw Request'),
+                            ),
+                          ],
+                        ],
                         if (requestAccepted && tripInPast) ...[
                           const SizedBox(height: 12),
                           SizedBox(
@@ -377,7 +483,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                           icon: const Icon(Icons.star_outline),
                                           tooltip: 'View Reviews',
                                         ),
-                                        if (request.status == 'pending')
+                                        if (request.status == 'pending' &&
+                                            !trip.isCancelled &&
+                                            !trip.isFull)
                                           FilledButton.tonal(
                                             onPressed: () => _updateRequest(
                                               request.id,

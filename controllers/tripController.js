@@ -5,11 +5,15 @@ const { findUserById } = require('../models/users');
 const {
   createTrip,
   updateTrip,
+  cancelTrip,
+  completeTrip,
   listTrips,
   findTripById,
+  listTripsForDriver,
   listRideRequestsForTrip,
   findViewerRequest,
 } = require('../models/trips');
+const { createNotification } = require('../models/notifications');
 
 async function createTripHandler(req, res) {
   const {
@@ -17,6 +21,7 @@ async function createTripHandler(req, res) {
     destinationCity,
     departureTime,
     seatsAvailable,
+    meetingSpot,
     notes,
   } = req.body;
 
@@ -46,6 +51,7 @@ async function createTripHandler(req, res) {
       destinationCity,
       departureTime,
       seatsAvailable: Number(seatsAvailable),
+      meetingSpot,
       notes,
     });
 
@@ -56,8 +62,14 @@ async function createTripHandler(req, res) {
 }
 
 async function updateTripHandler(req, res) {
-  const { originCity, destinationCity, departureTime, seatsAvailable, notes } =
-    req.body;
+  const {
+    originCity,
+    destinationCity,
+    departureTime,
+    seatsAvailable,
+    meetingSpot,
+    notes,
+  } = req.body;
 
   if (!originCity || !destinationCity || !departureTime || !seatsAvailable) {
     return res.status(400).json({
@@ -76,8 +88,8 @@ async function updateTripHandler(req, res) {
     });
   }
 
-  if (Number(seatsAvailable) < 1) {
-    return res.status(400).json({ error: 'Seats available must be at least 1.' });
+  if (Number(seatsAvailable) < 0) {
+    return res.status(400).json({ error: 'Seats available cannot be negative.' });
   }
 
   try {
@@ -99,6 +111,7 @@ async function updateTripHandler(req, res) {
       destinationCity,
       departureTime,
       seatsAvailable: Number(seatsAvailable),
+      meetingSpot,
       notes,
     });
 
@@ -120,6 +133,15 @@ async function listTripsHandler(_req, res) {
     return res.json(enriched);
   } catch (error) {
     return res.status(500).json({ error: 'Unable to load trips.' });
+  }
+}
+
+async function listMyTripsHandler(req, res) {
+  try {
+    const trips = await listTripsForDriver(req.user.id);
+    return res.json(trips);
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to load your trips.' });
   }
 }
 
@@ -170,9 +192,104 @@ async function getTripByIdHandler(req, res) {
   }
 }
 
+async function cancelTripHandler(req, res) {
+  try {
+    const trip = await findTripById(req.params.id);
+    if (!trip) {
+      return res.status(404).json({ error: 'Trip not found.' });
+    }
+
+    if (trip.driver_id !== req.user.id) {
+      return res.status(403).json({ error: 'Only the driver can cancel this trip.' });
+    }
+
+    if (trip.status === 'cancelled') {
+      return res.status(400).json({ error: 'This trip is already cancelled.' });
+    }
+
+    const updatedTrip = await cancelTrip({
+      tripId: Number(req.params.id),
+      driverId: req.user.id,
+    });
+
+    const rideRequests = await listRideRequestsForTrip(Number(req.params.id));
+    await Promise.all(
+      rideRequests
+          .filter((request) => request.status === 'accepted')
+          .map((request) =>
+            createNotification({
+              userId: request.rider_id,
+              type: 'trip_cancelled',
+              title: 'Trip cancelled',
+              body: 'A driver cancelled one of your upcoming trips.',
+              tripId: Number(req.params.id),
+              requestId: request.id,
+            }),
+          ),
+    );
+
+    return res.json(updatedTrip);
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to cancel trip.' });
+  }
+}
+
+async function completeTripHandler(req, res) {
+  try {
+    const trip = await findTripById(req.params.id);
+    if (!trip) {
+      return res.status(404).json({ error: 'Trip not found.' });
+    }
+
+    if (trip.driver_id !== req.user.id) {
+      return res.status(403).json({ error: 'Only the driver can complete this trip.' });
+    }
+
+    if (trip.status === 'completed') {
+      return res.status(400).json({ error: 'This trip is already completed.' });
+    }
+
+    if (trip.status === 'cancelled') {
+      return res.status(400).json({ error: 'Cancelled trips cannot be completed.' });
+    }
+
+    if (new Date(trip.departure_time) > new Date()) {
+      return res.status(400).json({ error: 'Trips can only be completed after departure time.' });
+    }
+
+    const updatedTrip = await completeTrip({
+      tripId: Number(req.params.id),
+      driverId: req.user.id,
+    });
+
+    const rideRequests = await listRideRequestsForTrip(Number(req.params.id));
+    await Promise.all(
+      rideRequests
+          .filter((request) => request.status === 'accepted')
+          .map((request) =>
+            createNotification({
+              userId: request.rider_id,
+              type: 'trip_completed',
+              title: 'Trip completed',
+              body: 'Your completed trip is now in history. Leave a review if you have not yet.',
+              tripId: Number(req.params.id),
+              requestId: request.id,
+            }),
+          ),
+    );
+
+    return res.json(updatedTrip);
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to complete trip.' });
+  }
+}
+
 module.exports = {
   createTripHandler,
   updateTripHandler,
+  cancelTripHandler,
+  completeTripHandler,
   listTripsHandler,
+  listMyTripsHandler,
   getTripByIdHandler,
 };

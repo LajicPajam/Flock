@@ -7,6 +7,8 @@ import 'package:http_parser/http_parser.dart';
 import '../models/auth_user.dart';
 import '../models/carbon_stats.dart';
 import '../models/chat_message.dart';
+import '../models/notification_summary.dart';
+import '../models/request_summary.dart';
 import '../models/review.dart';
 import '../models/trip.dart';
 
@@ -147,6 +149,7 @@ class ApiService {
     required String destinationCity,
     required DateTime departureTime,
     required int seatsAvailable,
+    required String meetingSpot,
     required String notes,
   }) async {
     final response = await http.post(
@@ -157,6 +160,7 @@ class ApiService {
         'destinationCity': destinationCity,
         'departureTime': departureTime.toUtc().toIso8601String(),
         'seatsAvailable': seatsAvailable,
+        'meetingSpot': meetingSpot,
         'notes': notes,
       }),
     );
@@ -171,6 +175,7 @@ class ApiService {
     required String destinationCity,
     required DateTime departureTime,
     required int seatsAvailable,
+    required String meetingSpot,
     required String notes,
   }) async {
     final response = await http.put(
@@ -181,8 +186,30 @@ class ApiService {
         'destinationCity': destinationCity,
         'departureTime': departureTime.toUtc().toIso8601String(),
         'seatsAvailable': seatsAvailable,
+        'meetingSpot': meetingSpot,
         'notes': notes,
       }),
+    );
+
+    _decode(response);
+  }
+
+  Future<void> cancelTrip({required String token, required int tripId}) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/trips/$tripId/cancel'),
+      headers: _headers(token),
+    );
+
+    _decode(response);
+  }
+
+  Future<void> completeTrip({
+    required String token,
+    required int tripId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/trips/$tripId/complete'),
+      headers: _headers(token),
     );
 
     _decode(response);
@@ -341,6 +368,77 @@ class ApiService {
     _decode(response);
   }
 
+  Future<void> withdrawRequest({
+    required String token,
+    required int requestId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/requests/$requestId/withdraw'),
+      headers: _headers(token),
+    );
+
+    _decode(response);
+  }
+
+  Future<List<Trip>> fetchMyTrips({required String token}) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/me/trips'),
+      headers: _headers(token),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    final rawTrips = data['trips'] as List<dynamic>? ?? const [];
+    return rawTrips
+        .map((item) => Trip.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<RequestSummary>> fetchMyRequests({required String token}) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/me/requests'),
+      headers: _headers(token),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    final rawRequests = data['requests'] as List<dynamic>? ?? const [];
+    return rawRequests
+        .map((item) => RequestSummary.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<NotificationSummary> fetchNotifications({
+    required String token,
+  }) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/me/notifications'),
+      headers: _headers(token),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    return NotificationSummary.fromJson(data);
+  }
+
+  Future<void> markNotificationRead({
+    required String token,
+    required int notificationId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/users/me/notifications/$notificationId/read'),
+      headers: _headers(token),
+    );
+
+    _decode(response);
+  }
+
+  Future<void> markAllNotificationsRead({required String token}) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/users/me/notifications/read-all'),
+      headers: _headers(token),
+    );
+
+    _decode(response);
+  }
+
   Future<MessagesResult> fetchMessages({
     required String token,
     required int tripId,
@@ -442,7 +540,17 @@ class ApiService {
 
   dynamic _decode(http.Response response) {
     final body = response.body.isEmpty ? '{}' : response.body;
-    final decoded = jsonDecode(body);
+    dynamic decoded;
+
+    try {
+      decoded = jsonDecode(body);
+    } on FormatException {
+      throw Exception(
+        response.statusCode >= 400
+            ? 'The backend returned an unexpected response. Restart the backend so the latest routes are loaded.'
+            : 'Received an unexpected non-JSON response from the backend.',
+      );
+    }
 
     if (response.statusCode >= 400) {
       final message = decoded is Map<String, dynamic>

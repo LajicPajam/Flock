@@ -20,6 +20,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   final _formKey = GlobalKey<FormState>();
   final _driverFormKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
+  final _meetingSpotController = TextEditingController();
   final _seatsController = TextEditingController(text: '3');
   final _carMakeController = TextEditingController();
   final _carModelController = TextEditingController();
@@ -70,6 +71,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       _destination = CollegeCity.fromApiValue(existingTrip.destinationCity);
       _departure = existingTrip.departureTime.toLocal();
       _seatsController.text = existingTrip.seatsAvailable.toString();
+      _meetingSpotController.text = existingTrip.meetingSpot;
       _notesController.text = existingTrip.notes;
     }
   }
@@ -77,6 +79,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   @override
   void dispose() {
     _notesController.dispose();
+    _meetingSpotController.dispose();
     _seatsController.dispose();
     _carMakeController.dispose();
     _carModelController.dispose();
@@ -146,6 +149,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
           destinationCity: _destination.apiValue,
           departureTime: _departure,
           seatsAvailable: int.parse(_seatsController.text),
+          meetingSpot: _meetingSpotController.text.trim(),
           notes: _notesController.text.trim(),
         );
       } else {
@@ -154,6 +158,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
           destinationCity: _destination.apiValue,
           departureTime: _departure,
           seatsAvailable: int.parse(_seatsController.text),
+          meetingSpot: _meetingSpotController.text.trim(),
           notes: _notesController.text.trim(),
         );
       }
@@ -468,11 +473,24 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                             ),
                             validator: (value) {
                               final parsed = int.tryParse(value ?? '');
-                              if (parsed == null || parsed < 1) {
-                                return 'Enter at least 1 seat.';
+                              final minimumSeats = _isEditing ? 0 : 1;
+                              if (parsed == null || parsed < minimumSeats) {
+                                return _isEditing
+                                    ? 'Enter 0 or more seats.'
+                                    : 'Enter at least 1 seat.';
                               }
                               return null;
                             },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _meetingSpotController,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'Meeting Spot (optional)',
+                              hintText: 'Library parking lot, south entrance',
+                              border: OutlineInputBorder(),
+                            ),
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
