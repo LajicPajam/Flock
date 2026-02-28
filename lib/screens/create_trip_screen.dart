@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/city.dart';
+import '../models/trip.dart';
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
 import 'ui_shell.dart';
 
 class CreateTripScreen extends StatefulWidget {
-  const CreateTripScreen({super.key});
+  const CreateTripScreen({super.key, this.existingTrip});
+
+  final Trip? existingTrip;
 
   @override
   State<CreateTripScreen> createState() => _CreateTripScreenState();
@@ -17,6 +20,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   final _formKey = GlobalKey<FormState>();
   final _driverFormKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
+  final _meetingSpotController = TextEditingController();
   final _seatsController = TextEditingController(text: '3');
   final _carMakeController = TextEditingController();
   final _carModelController = TextEditingController();
@@ -29,6 +33,8 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   DateTime _departure = DateTime.now().add(const Duration(days: 1));
   bool _saving = false;
   bool _savingDriverProfile = false;
+
+  bool get _isEditing => widget.existingTrip != null;
 
   String get _departureLabel {
     final month = _monthName(_departure.month);
@@ -57,8 +63,23 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    final existingTrip = widget.existingTrip;
+    if (existingTrip != null) {
+      _origin = CollegeCity.fromApiValue(existingTrip.originCity);
+      _destination = CollegeCity.fromApiValue(existingTrip.destinationCity);
+      _departure = existingTrip.departureTime.toLocal();
+      _seatsController.text = existingTrip.seatsAvailable.toString();
+      _meetingSpotController.text = existingTrip.meetingSpot;
+      _notesController.text = existingTrip.notes;
+    }
+  }
+
+  @override
   void dispose() {
     _notesController.dispose();
+    _meetingSpotController.dispose();
     _seatsController.dispose();
     _carMakeController.dispose();
     _carModelController.dispose();
@@ -120,13 +141,27 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     });
 
     try {
-      await context.read<AppState>().createTrip(
-        originCity: _origin.apiValue,
-        destinationCity: _destination.apiValue,
-        departureTime: _departure,
-        seatsAvailable: int.parse(_seatsController.text),
-        notes: _notesController.text.trim(),
-      );
+      final appState = context.read<AppState>();
+      if (_isEditing) {
+        await appState.updateTrip(
+          tripId: widget.existingTrip!.id,
+          originCity: _origin.apiValue,
+          destinationCity: _destination.apiValue,
+          departureTime: _departure,
+          seatsAvailable: int.parse(_seatsController.text),
+          meetingSpot: _meetingSpotController.text.trim(),
+          notes: _notesController.text.trim(),
+        );
+      } else {
+        await appState.createTrip(
+          originCity: _origin.apiValue,
+          destinationCity: _destination.apiValue,
+          departureTime: _departure,
+          seatsAvailable: int.parse(_seatsController.text),
+          meetingSpot: _meetingSpotController.text.trim(),
+          notes: _notesController.text.trim(),
+        );
+      }
       if (!mounted) {
         return;
       }
@@ -216,13 +251,13 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     final isDriver = currentUser?.isDriver ?? false;
 
     return UiShell(
-      title: 'Create Trip',
+      title: _isEditing ? 'Edit Trip' : 'Create Trip',
       child: ListView(
         children: [
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: !isDriver
+              child: !isDriver && !_isEditing
                   ? Form(
                       key: _driverFormKey,
                       child: Column(
@@ -438,11 +473,24 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                             ),
                             validator: (value) {
                               final parsed = int.tryParse(value ?? '');
-                              if (parsed == null || parsed < 1) {
-                                return 'Enter at least 1 seat.';
+                              final minimumSeats = _isEditing ? 0 : 1;
+                              if (parsed == null || parsed < minimumSeats) {
+                                return _isEditing
+                                    ? 'Enter 0 or more seats.'
+                                    : 'Enter at least 1 seat.';
                               }
                               return null;
                             },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _meetingSpotController,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'Meeting Spot (optional)',
+                              hintText: 'Library parking lot, south entrance',
+                              border: OutlineInputBorder(),
+                            ),
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
@@ -458,7 +506,13 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                             width: double.infinity,
                             child: FilledButton(
                               onPressed: _saving ? null : _submit,
-                              child: Text(_saving ? 'Saving...' : 'Post Trip'),
+                              child: Text(
+                                _saving
+                                    ? 'Saving...'
+                                    : _isEditing
+                                    ? 'Save Changes'
+                                    : 'Post Trip',
+                              ),
                             ),
                           ),
                         ],

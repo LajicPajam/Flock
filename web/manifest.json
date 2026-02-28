@@ -1,11 +1,11 @@
 {
-    "name": "flock_app",
-    "short_name": "flock_app",
+    "name": "Flock Carpool",
+    "short_name": "Flock",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Minimal college carpool MVP for local development.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

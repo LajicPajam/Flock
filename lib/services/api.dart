@@ -5,7 +5,11 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import '../models/auth_user.dart';
+import '../models/carbon_stats.dart';
 import '../models/chat_message.dart';
+import '../models/notification_summary.dart';
+import '../models/request_summary.dart';
+import '../models/review.dart';
 import '../models/trip.dart';
 
 class ApiResult {
@@ -25,6 +29,18 @@ class MessagesResult {
   final List<ChatMessage> messages;
   final List<Map<String, dynamic>> acceptedRiders;
   final int? participantId;
+}
+
+class UserReviewsResult {
+  UserReviewsResult({
+    required this.reviews,
+    required this.reviewCount,
+    required this.averageRating,
+  });
+
+  final List<Review> reviews;
+  final int reviewCount;
+  final double averageRating;
 }
 
 class ApiService {
@@ -133,6 +149,7 @@ class ApiService {
     required String destinationCity,
     required DateTime departureTime,
     required int seatsAvailable,
+    required String meetingSpot,
     required String notes,
   }) async {
     final response = await http.post(
@@ -143,8 +160,56 @@ class ApiService {
         'destinationCity': destinationCity,
         'departureTime': departureTime.toUtc().toIso8601String(),
         'seatsAvailable': seatsAvailable,
+        'meetingSpot': meetingSpot,
         'notes': notes,
       }),
+    );
+
+    _decode(response);
+  }
+
+  Future<void> updateTrip({
+    required String token,
+    required int tripId,
+    required String originCity,
+    required String destinationCity,
+    required DateTime departureTime,
+    required int seatsAvailable,
+    required String meetingSpot,
+    required String notes,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/trips/$tripId'),
+      headers: _headers(token),
+      body: jsonEncode({
+        'originCity': originCity,
+        'destinationCity': destinationCity,
+        'departureTime': departureTime.toUtc().toIso8601String(),
+        'seatsAvailable': seatsAvailable,
+        'meetingSpot': meetingSpot,
+        'notes': notes,
+      }),
+    );
+
+    _decode(response);
+  }
+
+  Future<void> cancelTrip({required String token, required int tripId}) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/trips/$tripId/cancel'),
+      headers: _headers(token),
+    );
+
+    _decode(response);
+  }
+
+  Future<void> completeTrip({
+    required String token,
+    required int tripId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/trips/$tripId/complete'),
+      headers: _headers(token),
     );
 
     _decode(response);
@@ -303,6 +368,77 @@ class ApiService {
     _decode(response);
   }
 
+  Future<void> withdrawRequest({
+    required String token,
+    required int requestId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/requests/$requestId/withdraw'),
+      headers: _headers(token),
+    );
+
+    _decode(response);
+  }
+
+  Future<List<Trip>> fetchMyTrips({required String token}) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/me/trips'),
+      headers: _headers(token),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    final rawTrips = data['trips'] as List<dynamic>? ?? const [];
+    return rawTrips
+        .map((item) => Trip.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<RequestSummary>> fetchMyRequests({required String token}) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/me/requests'),
+      headers: _headers(token),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    final rawRequests = data['requests'] as List<dynamic>? ?? const [];
+    return rawRequests
+        .map((item) => RequestSummary.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<NotificationSummary> fetchNotifications({
+    required String token,
+  }) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/me/notifications'),
+      headers: _headers(token),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    return NotificationSummary.fromJson(data);
+  }
+
+  Future<void> markNotificationRead({
+    required String token,
+    required int notificationId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/users/me/notifications/$notificationId/read'),
+      headers: _headers(token),
+    );
+
+    _decode(response);
+  }
+
+  Future<void> markAllNotificationsRead({required String token}) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/users/me/notifications/read-all'),
+      headers: _headers(token),
+    );
+
+    _decode(response);
+  }
+
   Future<MessagesResult> fetchMessages({
     required String token,
     required int tripId,
@@ -346,6 +482,54 @@ class ApiService {
     _decode(response);
   }
 
+  Future<CarbonStats> fetchCarbonStats({required String token}) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/me/carbon-stats'),
+      headers: _headers(token),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    return CarbonStats.fromJson(data);
+  }
+
+  Future<void> createReview({
+    required String token,
+    required int tripId,
+    required int revieweeId,
+    required int rating,
+    required String comment,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/trips/$tripId/reviews'),
+      headers: _headers(token),
+      body: jsonEncode({
+        'revieweeId': revieweeId,
+        'rating': rating,
+        'comment': comment,
+      }),
+    );
+
+    _decode(response);
+  }
+
+  Future<UserReviewsResult> fetchUserReviews(int userId) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/$userId/reviews'),
+    );
+    final data = _decode(response) as Map<String, dynamic>;
+    final rawReviews = data['reviews'] as List<dynamic>? ?? const [];
+    final summary = data['summary'] as Map<String, dynamic>? ?? const {};
+
+    return UserReviewsResult(
+      reviews: rawReviews
+          .map((item) => Review.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      reviewCount: summary['review_count'] as int? ?? 0,
+      averageRating:
+          double.tryParse('${summary['average_rating'] ?? 0}') ?? 0.0,
+    );
+  }
+
   ApiResult _parseAuthResult(http.Response response) {
     final data = _decode(response) as Map<String, dynamic>;
     return ApiResult(
@@ -356,7 +540,17 @@ class ApiService {
 
   dynamic _decode(http.Response response) {
     final body = response.body.isEmpty ? '{}' : response.body;
-    final decoded = jsonDecode(body);
+    dynamic decoded;
+
+    try {
+      decoded = jsonDecode(body);
+    } on FormatException {
+      throw Exception(
+        response.statusCode >= 400
+            ? 'The backend returned an unexpected response. Restart the backend so the latest routes are loaded.'
+            : 'Received an unexpected non-JSON response from the backend.',
+      );
+    }
 
     if (response.statusCode >= 400) {
       final message = decoded is Map<String, dynamic>

@@ -43,4 +43,21 @@ class AuthUser {
       carDescription: json['car_description'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'phone_number': phoneNumber,
+      'profile_photo_url': profilePhotoUrl,
+      'is_driver': isDriver,
+      'car_make': carMake,
+      'car_model': carModel,
+      'car_color': carColor,
+      'car_plate_state': carPlateState,
+      'car_plate_number': carPlateNumber,
+      'car_description': carDescription,
+    };
+  }
 }
