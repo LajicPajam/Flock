@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/auth_user.dart';
+import '../models/app_carbon_overview.dart';
 import '../models/carbon_stats.dart';
 import '../models/notification_summary.dart';
 import '../models/request_summary.dart';
@@ -35,6 +36,7 @@ class AppState extends ChangeNotifier {
   bool _shouldShowWelcomeTour = false;
   String? _errorMessage;
   CarbonStats? _carbonStats;
+  AppCarbonOverview? _appCarbonOverview;
 
   bool get isAuthenticated => _token != null;
   bool get isLoading => _isLoading;
@@ -44,6 +46,7 @@ class AppState extends ChangeNotifier {
   String? get token => _token;
   List<Trip> get trips => _trips;
   CarbonStats? get carbonStats => _carbonStats;
+  AppCarbonOverview? get appCarbonOverview => _appCarbonOverview;
   List<Trip> get myTrips => _myTrips;
   List<RequestSummary> get myRequests => _myRequests;
   NotificationSummary get notifications => _notifications;
@@ -59,6 +62,10 @@ class AppState extends ChangeNotifier {
     required String password,
     required String phoneNumber,
     required String profilePhotoUrl,
+    String? major,
+    String? academicYear,
+    String? vibe,
+    String? favoritePlaylist,
     bool isDriver = false,
     String? carMake,
     String? carModel,
@@ -74,6 +81,10 @@ class AppState extends ChangeNotifier {
         password: password,
         phoneNumber: phoneNumber,
         profilePhotoUrl: profilePhotoUrl,
+        major: major,
+        academicYear: academicYear,
+        vibe: vibe,
+        favoritePlaylist: favoritePlaylist,
         isDriver: isDriver,
         carMake: carMake,
         carModel: carModel,
@@ -286,10 +297,21 @@ class AppState extends ChangeNotifier {
     return stats;
   }
 
+  Future<AppCarbonOverview> loadAppCarbonOverview() async {
+    final overview = await _api.fetchAppCarbonOverview(token: _requireToken());
+    _appCarbonOverview = overview;
+    notifyListeners();
+    return overview;
+  }
+
   Future<void> updateProfile({
     required String name,
     required String phoneNumber,
     required String profilePhotoUrl,
+    String? major,
+    String? academicYear,
+    String? vibe,
+    String? favoritePlaylist,
     String? carMake,
     String? carModel,
     String? carColor,
@@ -302,6 +324,10 @@ class AppState extends ChangeNotifier {
       name: name,
       phoneNumber: phoneNumber,
       profilePhotoUrl: profilePhotoUrl,
+      major: major,
+      academicYear: academicYear,
+      vibe: vibe,
+      favoritePlaylist: favoritePlaylist,
       carMake: carMake,
       carModel: carModel,
       carColor: carColor,
@@ -346,6 +372,7 @@ class AppState extends ChangeNotifier {
     _shouldShowWelcomeTour = false;
     _errorMessage = null;
     _carbonStats = null;
+    _appCarbonOverview = null;
     _clearPersistedSession();
     _carbonStats = null;
     _clearPersistedSession();

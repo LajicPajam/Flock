@@ -22,6 +22,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _majorController = TextEditingController();
+  final _academicYearController = TextEditingController();
+  final _vibeController = TextEditingController();
+  final _favoritePlaylistController = TextEditingController();
   final _carMakeController = TextEditingController();
   final _carModelController = TextEditingController();
   final _carColorController = TextEditingController();
@@ -50,6 +54,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _majorController.dispose();
+    _academicYearController.dispose();
+    _vibeController.dispose();
+    _favoritePlaylistController.dispose();
     _carMakeController.dispose();
     _carModelController.dispose();
     _carColorController.dispose();
@@ -61,6 +69,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _populate(AuthUser user) {
     _nameController.text = user.name;
+    _phoneController.text = user.phoneNumber;
+    _majorController.text = user.major ?? '';
+    _academicYearController.text = user.academicYear ?? '';
+    _vibeController.text = user.vibe ?? '';
+    _favoritePlaylistController.text = user.favoritePlaylist ?? '';
     _phoneController.text = formatPhoneNumber(user.phoneNumber);
     _carMakeController.text = user.carMake ?? '';
     _carModelController.text = user.carModel ?? '';
@@ -136,6 +149,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         name: _nameController.text.trim(),
         phoneNumber: digitsOnlyPhone(_phoneController.text),
         profilePhotoUrl: photoUrl,
+        major: _majorController.text.trim().isEmpty
+            ? null
+            : _majorController.text.trim(),
+        academicYear: _academicYearController.text.trim().isEmpty
+            ? null
+            : _academicYearController.text.trim(),
+        vibe: _vibeController.text.trim().isEmpty
+            ? null
+            : _vibeController.text.trim(),
+        favoritePlaylist: _favoritePlaylistController.text.trim().isEmpty
+            ? null
+            : _favoritePlaylistController.text.trim(),
         carMake: hasAllDriverFields ? driverFields[0] : null,
         carModel: hasAllDriverFields ? driverFields[1] : null,
         carColor: hasAllDriverFields ? driverFields[2] : null,
@@ -284,6 +309,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: 'Phone Number',
                       keyboardType: TextInputType.phone,
                       inputFormatters: [UsPhoneTextInputFormatter()],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _majorController,
+                      decoration: const InputDecoration(
+                        labelText: 'Major (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _academicYearController,
+                      decoration: const InputDecoration(
+                        labelText: 'Year (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _vibeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Vibe (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _favoritePlaylistController,
+                      decoration: const InputDecoration(
+                        labelText: 'Favorite Playlist (optional)',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
                     const SizedBox(height: 20),
                     Text(

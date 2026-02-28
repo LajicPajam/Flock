@@ -1,4 +1,4 @@
-const { getCarbonSavedForUser } = require('../models/carbon');
+const { getCarbonSavedForUser, getOverallCarbonStats } = require('../models/carbon');
 
 async function getCarbonStatsHandler(req, res) {
   try {
@@ -9,4 +9,13 @@ async function getCarbonStatsHandler(req, res) {
   }
 }
 
-module.exports = { getCarbonStatsHandler };
+async function getOverallCarbonStatsHandler(_req, res) {
+  try {
+    const stats = await getOverallCarbonStats();
+    return res.json(stats);
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to load overall carbon stats.' });
+  }
+}
+
+module.exports = { getCarbonStatsHandler, getOverallCarbonStatsHandler };

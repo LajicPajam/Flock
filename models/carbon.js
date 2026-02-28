@@ -109,9 +109,50 @@ async function getCarbonSavedForUsers(userIds) {
   return result;
 }
 
+/**
+ * Returns app-wide totals:
+ * { total_co2_saved_grams, total_distance_km, completed_rides }
+ */
+async function getOverallCarbonStats() {
+  const riderResult = await db.query(
+    `SELECT t.origin_city, t.destination_city
+     FROM ride_requests rr
+     JOIN trips t ON rr.trip_id = t.id
+     WHERE rr.status = 'accepted'
+       AND (t.status = 'completed' OR t.departure_time < NOW())`,
+  );
+
+  const driverResult = await db.query(
+    `SELECT t.origin_city, t.destination_city
+     FROM trips t
+     WHERE (t.status = 'completed' OR t.departure_time < NOW())
+       AND EXISTS (
+         SELECT 1 FROM ride_requests rr
+         WHERE rr.trip_id = t.id AND rr.status = 'accepted'
+       )`,
+  );
+
+  const allRides = [...riderResult.rows, ...driverResult.rows];
+  let totalCO2Grams = 0;
+  let totalDistanceKm = 0;
+
+  for (const ride of allRides) {
+    const distance = getDistanceKm(ride.origin_city, ride.destination_city);
+    totalDistanceKm += distance;
+    totalCO2Grams += distance * CO2_GRAMS_PER_KM;
+  }
+
+  return {
+    total_co2_saved_grams: totalCO2Grams,
+    total_distance_km: totalDistanceKm,
+    completed_rides: allRides.length,
+  };
+}
+
 module.exports = {
   getDistanceKm,
   getCarbonSavedForUser,
   getCarbonSavedForUsers,
+  getOverallCarbonStats,
   CO2_GRAMS_PER_KM,
 };

@@ -6,6 +6,11 @@ class RideRequest {
     required this.message,
     required this.status,
     this.riderName,
+    this.riderMajor,
+    this.riderAcademicYear,
+    this.riderVibe,
+    this.riderFavoritePlaylist,
+    this.riderAverageRating,
   });
 
   final int id;
@@ -14,6 +19,11 @@ class RideRequest {
   final String message;
   final String status;
   final String? riderName;
+  final String? riderMajor;
+  final String? riderAcademicYear;
+  final String? riderVibe;
+  final String? riderFavoritePlaylist;
+  final double? riderAverageRating;
 
   bool get isAccepted => status == 'accepted';
 
@@ -25,6 +35,12 @@ class RideRequest {
       message: json['message'] as String,
       status: json['status'] as String,
       riderName: json['rider_name'] as String?,
+      riderMajor: json['rider_major'] as String?,
+      riderAcademicYear: json['rider_academic_year'] as String?,
+      riderVibe: json['rider_vibe'] as String?,
+      riderFavoritePlaylist: json['rider_favorite_playlist'] as String?,
+      riderAverageRating:
+          double.tryParse('${json['rider_average_rating'] ?? ''}'),
     );
   }
 }

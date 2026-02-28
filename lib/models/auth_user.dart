@@ -5,6 +5,10 @@ class AuthUser {
     required this.email,
     required this.phoneNumber,
     required this.profilePhotoUrl,
+    this.major,
+    this.academicYear,
+    this.vibe,
+    this.favoritePlaylist,
     required this.isDriver,
     this.carMake,
     this.carModel,
@@ -19,6 +23,10 @@ class AuthUser {
   final String email;
   final String phoneNumber;
   final String profilePhotoUrl;
+  final String? major;
+  final String? academicYear;
+  final String? vibe;
+  final String? favoritePlaylist;
   final bool isDriver;
   final String? carMake;
   final String? carModel;
@@ -34,6 +42,10 @@ class AuthUser {
       email: json['email'] as String,
       phoneNumber: json['phone_number'] as String? ?? '',
       profilePhotoUrl: json['profile_photo_url'] as String? ?? '',
+      major: json['major'] as String?,
+      academicYear: json['academic_year'] as String?,
+      vibe: json['vibe'] as String?,
+      favoritePlaylist: json['favorite_playlist'] as String?,
       isDriver: json['is_driver'] as bool? ?? false,
       carMake: json['car_make'] as String?,
       carModel: json['car_model'] as String?,
@@ -51,6 +63,10 @@ class AuthUser {
       'email': email,
       'phone_number': phoneNumber,
       'profile_photo_url': profilePhotoUrl,
+      'major': major,
+      'academic_year': academicYear,
+      'vibe': vibe,
+      'favorite_playlist': favoritePlaylist,
       'is_driver': isDriver,
       'car_make': carMake,
       'car_model': carModel,
