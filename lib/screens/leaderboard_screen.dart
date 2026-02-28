@@ -26,7 +26,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   static const List<_LeaderboardCategory> _categories = [
     _LeaderboardCategory(
-      tabLabel: '\u{1F697} Top Drivers',
+      tabLabel: 'Top Drivers',
       entries: [
         _LeaderboardEntry(
           name: 'Avery Turner',
@@ -49,7 +49,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       ],
     ),
     _LeaderboardCategory(
-      tabLabel: '\u{2B50} Top Rated',
+      tabLabel: 'Top Rated',
       entries: [
         _LeaderboardEntry(
           name: 'Ethan Brooks',
@@ -72,7 +72,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       ],
     ),
     _LeaderboardCategory(
-      tabLabel: '\u{1F331} Eco Leaders',
+      tabLabel: 'Eco Leaders',
       entries: [
         _LeaderboardEntry(
           name: 'Noah Lee',
@@ -95,7 +95,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       ],
     ),
     _LeaderboardCategory(
-      tabLabel: '\u{1F389} Event Champs',
+      tabLabel: 'Event Champs',
       entries: [
         _LeaderboardEntry(
           name: 'Liam Carter',

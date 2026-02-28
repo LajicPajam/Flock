@@ -16,21 +16,23 @@ class UiShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canPop = Navigator.of(context).canPop();
+
     return Scaffold(
       appBar: AppBar(
-        title: Text.rich(
-          TextSpan(
-            children: [
-              WidgetSpan(
-                alignment: PlaceholderAlignment.middle,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Image.asset('assets/flock_icon.png', height: 20),
+        centerTitle: true,
+        leading: canPop
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Image.asset('assets/flock_icon.png', height: 28),
                 ),
               ),
-              TextSpan(text: title),
-            ],
-          ),
+        leadingWidth: canPop ? null : 58,
+        title: Text(
+          title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

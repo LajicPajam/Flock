@@ -1,8 +1,11 @@
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../models/city.dart';
 import '../models/trip.dart' show Trip;
+import '../services/location_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
 import '../widgets/tier_badge.dart';
@@ -30,15 +33,26 @@ class _TripListScreenState extends State<TripListScreen> {
   LocationSelection? _originFilter;
   LocationSelection? _destinationFilter;
   DateTime? _departureDateFilter;
+  LocationSelection? _nearbyLocation;
+  List<Trip> _nearbyTrips = const [];
+  String? _nearbyTripsError;
+  bool _loadingNearbyTrips = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final appState = context.read<AppState>();
-      appState.loadTrips();
-      appState.loadActivity();
-      appState.loadNotifications();
+      await appState.loadTrips();
+      if (!mounted) {
+        return;
+      }
+      await _loadNearbyTripsPreview();
+      await appState.loadActivity();
+      await appState.loadNotifications();
+      if (!mounted) {
+        return;
+      }
       if (appState.consumePendingWelcomeTour()) {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
@@ -222,6 +236,93 @@ class _TripListScreenState extends State<TripListScreen> {
     });
   }
 
+  Future<void> _loadNearbyTripsPreview() async {
+    if (_loadingNearbyTrips) {
+      return;
+    }
+
+    final appState = context.read<AppState>();
+
+    setState(() {
+      _loadingNearbyTrips = true;
+      _nearbyTripsError = null;
+    });
+
+    try {
+      final resolved = await LocationService().resolveCurrentCity();
+      final allTrips = appState.trips;
+      final nearbyTrips = allTrips.where((trip) {
+        if (trip.isHistory) {
+          return false;
+        }
+        return _tripPassesNearLocation(trip, resolved.selection);
+      }).toList();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _nearbyLocation = resolved.selection;
+        _nearbyTrips = nearbyTrips;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _nearbyTripsError = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingNearbyTrips = false;
+        });
+      }
+    }
+  }
+
+  bool _tripPassesNearLocation(Trip trip, LocationSelection location) {
+    final start = _tripRouteStart(trip);
+    final end = _tripRouteEnd(trip);
+
+    return CollegeCity.distanceKmToSegment(
+          pointLatitude: location.latitude,
+          pointLongitude: location.longitude,
+          segmentStartLatitude: start.latitude,
+          segmentStartLongitude: start.longitude,
+          segmentEndLatitude: end.latitude,
+          segmentEndLongitude: end.longitude,
+        ) <=
+        _routeCorridorKm;
+  }
+
+  LocationSelection _tripRouteStart(Trip trip) {
+    if (trip.originLatitude != null && trip.originLongitude != null) {
+      return LocationSelection(
+        city: CollegeCity.fromApiValue(trip.originCity),
+        label: trip.originDisplayLabel,
+        latitude: trip.originLatitude!,
+        longitude: trip.originLongitude!,
+      );
+    }
+    final city = CollegeCity.fromApiValue(trip.originCity);
+    return LocationSelection.fromCity(city);
+  }
+
+  LocationSelection _tripRouteEnd(Trip trip) {
+    if (trip.destinationLatitude != null && trip.destinationLongitude != null) {
+      return LocationSelection(
+        city: CollegeCity.fromApiValue(trip.destinationCity),
+        label: trip.destinationDisplayLabel,
+        latitude: trip.destinationLatitude!,
+        longitude: trip.destinationLongitude!,
+      );
+    }
+    final city = CollegeCity.fromApiValue(trip.destinationCity);
+    return LocationSelection.fromCity(city);
+  }
+
   Future<void> _handleMenuSelection(_TripMenuAction action) async {
     switch (action) {
       case _TripMenuAction.activity:
@@ -319,6 +420,7 @@ class _TripListScreenState extends State<TripListScreen> {
             return;
           }
           await appState.loadTrips();
+          await _loadNearbyTripsPreview();
         },
         icon: const Icon(Icons.add),
         label: const Text('Create Trip'),
@@ -327,6 +429,7 @@ class _TripListScreenState extends State<TripListScreen> {
         onRefresh: () async {
           final appState = context.read<AppState>();
           await appState.loadTrips();
+          await _loadNearbyTripsPreview();
           await appState.loadActivity();
           await appState.loadNotifications();
         },
@@ -339,6 +442,29 @@ class _TripListScreenState extends State<TripListScreen> {
               )
             : ListView(
                 children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Trips Near You',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 12),
+                          _NearbyTripsPreviewCard(
+                            currentLocation: _nearbyLocation,
+                            trips: _nearbyTrips,
+                            isLoading: _loadingNearbyTrips,
+                            errorText: _nearbyTripsError,
+                            onRetry: _loadNearbyTripsPreview,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -742,6 +868,277 @@ class _FilterMapButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _NearbyTripsPreviewCard extends StatelessWidget {
+  const _NearbyTripsPreviewCard({
+    required this.currentLocation,
+    required this.trips,
+    required this.isLoading,
+    required this.errorText,
+    required this.onRetry,
+  });
+
+  final LocationSelection? currentLocation;
+  final List<Trip> trips;
+  final bool isLoading;
+  final String? errorText;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (currentLocation == null && isLoading) {
+      return Container(
+        height: 220,
+        decoration: BoxDecoration(
+          color: AppColors.canvasBackground,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.subtleBorder),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (currentLocation == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.canvasBackground,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.subtleBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              errorText ?? 'Turn on location to see routes passing near you.',
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: isLoading ? null : onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry Location'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final allPoints = <LatLng>[
+      LatLng(currentLocation!.latitude, currentLocation!.longitude),
+    ];
+    final segments = trips
+        .map((trip) {
+          final start = _tripPoint(
+            trip.originLatitude,
+            trip.originLongitude,
+            trip.originCity,
+          );
+          final end = _tripPoint(
+            trip.destinationLatitude,
+            trip.destinationLongitude,
+            trip.destinationCity,
+          );
+          allPoints..add(start)..add(end);
+          return (trip: trip, start: start, end: end);
+        })
+        .toList();
+
+    final center = _centerFor(allPoints);
+    final zoom = _zoomFor(allPoints);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          trips.isEmpty
+              ? 'No active routes are currently passing near ${currentLocation!.label}.'
+              : '${trips.length} active route${trips.length == 1 ? '' : 's'} pass near ${currentLocation!.label}.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppColors.textInk.withValues(alpha: 0.72),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: SizedBox(
+            height: 220,
+            child: Stack(
+              children: [
+                FlutterMap(
+                  options: MapOptions(
+                    initialCenter: center,
+                    initialZoom: zoom,
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.lajicpajam.flock',
+                    ),
+                    if (segments.isNotEmpty)
+                      PolylineLayer(
+                        polylines: [
+                          for (var i = 0; i < segments.length; i++)
+                            Polyline(
+                              points: [segments[i].start, segments[i].end],
+                              strokeWidth: 4,
+                              color: _nearbyRouteColor(i),
+                            ),
+                        ],
+                      ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: LatLng(
+                            currentLocation!.latitude,
+                            currentLocation!.longitude,
+                          ),
+                          width: 42,
+                          height: 42,
+                          child: const _MiniAreaMarker(
+                            icon: Icons.my_location_rounded,
+                            color: AppColors.textInk,
+                          ),
+                        ),
+                        for (var i = 0; i < segments.length; i++) ...[
+                          Marker(
+                            point: segments[i].start,
+                            width: 30,
+                            height: 30,
+                            child: _MiniAreaMarker(
+                              icon: Icons.play_arrow_rounded,
+                              color: _nearbyRouteColor(i),
+                            ),
+                          ),
+                          Marker(
+                            point: segments[i].end,
+                            width: 30,
+                            height: 30,
+                            child: _MiniAreaMarker(
+                              icon: Icons.flag_rounded,
+                              color: _nearbyRouteColor(i),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const RichAttributionWidget(
+                      attributions: [
+                        TextSourceAttribution('OpenStreetMap contributors'),
+                      ],
+                    ),
+                  ],
+                ),
+                if (isLoading)
+                  const Positioned(
+                    right: 12,
+                    top: 12,
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2.2),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static LatLng _tripPoint(
+    double? latitude,
+    double? longitude,
+    String cityValue,
+  ) {
+    if (latitude != null && longitude != null) {
+      return LatLng(latitude, longitude);
+    }
+
+    final city = CollegeCity.fromApiValue(cityValue);
+    return LatLng(city.latitude, city.longitude);
+  }
+
+  static LatLng _centerFor(List<LatLng> points) {
+    var minLat = points.first.latitude;
+    var maxLat = points.first.latitude;
+    var minLng = points.first.longitude;
+    var maxLng = points.first.longitude;
+
+    for (final point in points.skip(1)) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLng) minLng = point.longitude;
+      if (point.longitude > maxLng) maxLng = point.longitude;
+    }
+
+    return LatLng((minLat + maxLat) / 2, (minLng + maxLng) / 2);
+  }
+
+  static double _zoomFor(List<LatLng> points) {
+    if (points.length < 2) {
+      return 9.5;
+    }
+
+    var minLat = points.first.latitude;
+    var maxLat = points.first.latitude;
+    var minLng = points.first.longitude;
+    var maxLng = points.first.longitude;
+
+    for (final point in points.skip(1)) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLng) minLng = point.longitude;
+      if (point.longitude > maxLng) maxLng = point.longitude;
+    }
+
+    final diagonalKm = CollegeCity.distanceKmBetween(
+      minLat,
+      minLng,
+      maxLat,
+      maxLng,
+    );
+
+    if (diagonalKm < 25) return 10.2;
+    if (diagonalKm < 60) return 9.1;
+    if (diagonalKm < 120) return 8.3;
+    if (diagonalKm < 250) return 7.3;
+    if (diagonalKm < 500) return 6.3;
+    if (diagonalKm < 1000) return 5.4;
+    return 4.8;
+  }
+
+  static Color _nearbyRouteColor(int index) {
+    const palette = [
+      AppColors.primaryGreen,
+      Color(0xFF4B8F6A),
+      Color(0xFF6AA084),
+      Color(0xFF1F513B),
+      Color(0xFF7AB59B),
+    ];
+    return palette[index % palette.length];
+  }
+}
+
+class _MiniAreaMarker extends StatelessWidget {
+  const _MiniAreaMarker({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: color, width: 2),
+      ),
+      child: Icon(icon, size: 16, color: color),
     );
   }
 }
