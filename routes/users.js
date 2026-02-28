@@ -10,7 +10,10 @@ const {
   markAllNotificationsReadHandler,
   markNotificationReadHandler,
 } = require('../controllers/userController');
-const { getCarbonStatsHandler } = require('../controllers/carbonController');
+const {
+  getCarbonStatsHandler,
+  getOverallCarbonStatsHandler,
+} = require('../controllers/carbonController');
 const { getUserReviewsHandler } = require('../controllers/reviewController');
 const { authRequired } = require('../middleware/auth');
 
@@ -25,6 +28,7 @@ router.post('/me/notifications/:id/read', authRequired, markNotificationReadHand
 router.put('/me', authRequired, updateCurrentUserHandler);
 router.post('/me/driver-profile', authRequired, updateDriverProfileHandler);
 router.get('/me/carbon-stats', authRequired, getCarbonStatsHandler);
+router.get('/carbon-overview', authRequired, getOverallCarbonStatsHandler);
 router.get('/:id/reviews', getUserReviewsHandler);
 
 module.exports = router;

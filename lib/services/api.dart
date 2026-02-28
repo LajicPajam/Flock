@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import '../models/auth_user.dart';
+import '../models/app_carbon_overview.dart';
 import '../models/carbon_stats.dart';
 import '../models/chat_message.dart';
 import '../models/notification_summary.dart';
@@ -490,6 +491,18 @@ class ApiService {
 
     final data = _decode(response) as Map<String, dynamic>;
     return CarbonStats.fromJson(data);
+  }
+
+  Future<AppCarbonOverview> fetchAppCarbonOverview({
+    required String token,
+  }) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/carbon-overview'),
+      headers: _headers(token),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    return AppCarbonOverview.fromJson(data);
   }
 
   Future<void> createReview({

@@ -11,6 +11,7 @@ import 'my_activity_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
+import 'leaderboard_screen.dart';
 import 'trip_detail_screen.dart';
 import 'ui_shell.dart';
 
@@ -122,6 +123,11 @@ class _TripListScreenState extends State<TripListScreen> {
           context,
         ).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
         return;
+      case _TripMenuAction.leaderboard:
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const LeaderboardScreen()),
+        );
+        return;
       case _TripMenuAction.logout:
         context.read<AppState>().logout();
         return;
@@ -164,6 +170,10 @@ class _TripListScreenState extends State<TripListScreen> {
             const PopupMenuItem<_TripMenuAction>(
               value: _TripMenuAction.settings,
               child: _MenuRow(icon: Icons.settings, label: 'Settings'),
+            ),
+            const PopupMenuItem<_TripMenuAction>(
+              value: _TripMenuAction.leaderboard,
+              child: _MenuRow(icon: Icons.emoji_events, label: 'Leaderboard'),
             ),
             const PopupMenuDivider(),
             const PopupMenuItem<_TripMenuAction>(
@@ -383,7 +393,14 @@ class _TripCard extends StatelessWidget {
   }
 }
 
-enum _TripMenuAction { activity, notifications, profile, settings, logout }
+enum _TripMenuAction {
+  activity,
+  notifications,
+  profile,
+  settings,
+  leaderboard,
+  logout,
+}
 
 class _MenuRow extends StatelessWidget {
   const _MenuRow({required this.icon, required this.label, this.count = 0});

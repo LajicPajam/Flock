@@ -1,9 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../state/app_state.dart';
 import 'ui_shell.dart';
 
-class LeaderboardScreen extends StatelessWidget {
+class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
+
+  @override
+  State<LeaderboardScreen> createState() => _LeaderboardScreenState();
+}
+
+class _LeaderboardScreenState extends State<LeaderboardScreen> {
+  static const int _demoCo2SavedGrams = 248600;
+  static const int _demoCompletedRides = 132;
+  static const int _demoDistanceKm = 2260;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppState>().loadAppCarbonOverview();
+    });
+  }
 
   static const List<_LeaderboardCategory> _categories = [
     _LeaderboardCategory(
@@ -102,12 +121,55 @@ class LeaderboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final overview = context.watch<AppState>().appCarbonOverview;
+    final hasRealData =
+        overview != null &&
+        (overview.totalCo2SavedGrams > 0 ||
+            overview.completedRides > 0 ||
+            overview.totalDistanceKm > 0);
+    final co2SavedGrams = hasRealData
+        ? overview!.totalCo2SavedGrams
+        : _demoCo2SavedGrams;
+    final completedRides = hasRealData
+        ? overview!.completedRides
+        : _demoCompletedRides;
+    final totalDistanceKm = hasRealData
+        ? overview!.totalDistanceKm
+        : _demoDistanceKm;
+    final totalKg = (co2SavedGrams / 1000).toStringAsFixed(1);
+
     return DefaultTabController(
       length: _categories.length,
       child: UiShell(
         title: 'Leaderboard',
         child: Column(
           children: [
+            Card(
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(16),
+                leading: const Icon(Icons.eco, size: 28),
+                title: const Text('Overall Carbon Savings'),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '$totalKg kg CO2 saved across $completedRides completed rides '
+                        'and $totalDistanceKm km carpooled.',
+                      ),
+                      if (!hasRealData)
+                        Text(
+                          'Demo estimate shown until real trip data is available.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             TabBar(
               isScrollable: true,
               tabAlignment: TabAlignment.start,
@@ -125,7 +187,10 @@ class LeaderboardScreen extends StatelessWidget {
                         separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final entry = category.entries[index];
-                          return _LeaderboardTile(rank: index + 1, entry: entry);
+                          return _LeaderboardTile(
+                            rank: index + 1,
+                            entry: entry,
+                          );
                         },
                       ),
                     )
