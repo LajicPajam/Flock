@@ -804,7 +804,7 @@ class _FindATripBar extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final useRow = constraints.maxWidth >= 560;
-        return Container(
+        final content = Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -850,6 +850,7 @@ class _FindATripBar extends StatelessWidget {
                   ],
                 )
               : Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _FilterMapButton(
@@ -888,6 +889,11 @@ class _FindATripBar extends StatelessWidget {
                   ],
                 ),
         );
+        // ListView gives unbounded height; constrain horizontal bar so Row gets bounded constraints.
+        if (useRow) {
+          return SizedBox(height: 80, child: content);
+        }
+        return content;
       },
     );
   }
