@@ -120,35 +120,25 @@ class UiShell extends StatelessWidget {
       ),
       floatingActionButton: floatingActionButton,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ClipRect(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final w = useWideLayout
-                        ? (constraints.maxWidth * 0.85).clamp(760.0, double.infinity)
-                        : 760.0;
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: w,
-                          height: constraints.maxHeight,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: child,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final w = useWideLayout
+                ? (constraints.maxWidth * 0.85).clamp(760.0, double.infinity)
+                : 760.0;
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: w,
+                  height: constraints.maxHeight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: child,
+                  ),
                 ),
-              ),
-            ),
-            const AppFooter(),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
