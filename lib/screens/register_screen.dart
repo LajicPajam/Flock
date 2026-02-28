@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
+import 'settings_screen.dart';
 import 'ui_shell.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -128,6 +129,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     return UiShell(
       title: 'Create Account',
+      actions: [
+        IconButton(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+            );
+          },
+          icon: const Icon(Icons.settings),
+          tooltip: 'Settings',
+        ),
+      ],
       child: ListView(
         children: [
           const SizedBox(height: 16),

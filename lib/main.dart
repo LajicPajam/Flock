@@ -82,6 +82,11 @@ class MyApp extends StatelessWidget {
         ),
         home: Consumer<AppState>(
           builder: (context, appState, _) {
+            if (!appState.isReady) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
             if (appState.isAuthenticated) {
               return const TripListScreen();
             }
