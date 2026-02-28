@@ -3,6 +3,7 @@ const { isValidCity } = require('../models/cities');
 const { findUserById } = require('../models/users');
 const {
   createTrip,
+  updateTrip,
   listTrips,
   findTripById,
   listRideRequestsForTrip,
@@ -53,6 +54,59 @@ async function createTripHandler(req, res) {
   }
 }
 
+async function updateTripHandler(req, res) {
+  const { originCity, destinationCity, departureTime, seatsAvailable, notes } =
+    req.body;
+
+  if (!originCity || !destinationCity || !departureTime || !seatsAvailable) {
+    return res.status(400).json({
+      error:
+        'Origin, destination, departure time, and seats available are required.',
+    });
+  }
+
+  if (
+    !isValidCity(originCity) ||
+    !isValidCity(destinationCity) ||
+    originCity === destinationCity
+  ) {
+    return res.status(400).json({
+      error: 'Trip cities must be different supported cities.',
+    });
+  }
+
+  if (Number(seatsAvailable) < 1) {
+    return res.status(400).json({ error: 'Seats available must be at least 1.' });
+  }
+
+  try {
+    const trip = await findTripById(req.params.id);
+    if (!trip) {
+      return res.status(404).json({ error: 'Trip not found.' });
+    }
+
+    if (trip.driver_id !== req.user.id) {
+      return res.status(403).json({
+        error: 'Only the driver who posted this trip can edit it.',
+      });
+    }
+
+    const updatedTrip = await updateTrip({
+      tripId: Number(req.params.id),
+      driverId: req.user.id,
+      originCity,
+      destinationCity,
+      departureTime,
+      seatsAvailable: Number(seatsAvailable),
+      notes,
+    });
+
+    return res.json(updatedTrip);
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to update trip.' });
+  }
+}
+
 async function listTripsHandler(_req, res) {
   try {
     const trips = await listTrips();
@@ -80,8 +134,24 @@ async function getTripByIdHandler(req, res) {
       rideRequests = await listRideRequestsForTrip(trip.id);
     }
 
+    const canViewCarInfo =
+      Boolean(viewer && viewer.id === trip.driver_id) ||
+      viewerRequest?.status === 'accepted';
+
+    const safeTrip = canViewCarInfo
+      ? trip
+      : {
+          ...trip,
+          driver_car_make: null,
+          driver_car_model: null,
+          driver_car_color: null,
+          driver_car_plate_state: null,
+          driver_car_plate_number: null,
+          driver_car_description: null,
+        };
+
     return res.json({
-      ...trip,
+      ...safeTrip,
       viewer_request: viewerRequest,
       ride_requests: rideRequests,
     });
@@ -92,6 +162,7 @@ async function getTripByIdHandler(req, res) {
 
 module.exports = {
   createTripHandler,
+  updateTripHandler,
   listTripsHandler,
   getTripByIdHandler,
 };

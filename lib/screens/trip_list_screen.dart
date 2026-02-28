@@ -17,6 +17,10 @@ class TripListScreen extends StatefulWidget {
 }
 
 class _TripListScreenState extends State<TripListScreen> {
+  CollegeCity? _originFilter;
+  CollegeCity? _destinationFilter;
+  DateTime? _departureDateFilter;
+
   @override
   void initState() {
     super.initState();
@@ -25,9 +29,65 @@ class _TripListScreenState extends State<TripListScreen> {
     });
   }
 
+  List<Trip> _filteredTrips(List<Trip> trips) {
+    return trips.where((trip) {
+      final matchesOrigin =
+          _originFilter == null || trip.originCity == _originFilter!.apiValue;
+      final matchesDestination =
+          _destinationFilter == null ||
+          trip.destinationCity == _destinationFilter!.apiValue;
+      final matchesDepartureDate =
+          _departureDateFilter == null ||
+          _isSameDay(trip.departureTime.toLocal(), _departureDateFilter!);
+      return matchesOrigin && matchesDestination && matchesDepartureDate;
+    }).toList();
+  }
+
+  bool _isSameDay(DateTime left, DateTime right) {
+    return left.year == right.year &&
+        left.month == right.month &&
+        left.day == right.day;
+  }
+
+  String _dateLabel(DateTime value) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[value.month - 1]} ${value.day}, ${value.year}';
+  }
+
+  Future<void> _pickDepartureDate() async {
+    final selectedDate = await showDatePicker(
+      context: context,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: _departureDateFilter ?? DateTime.now(),
+    );
+
+    if (selectedDate == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _departureDateFilter = selectedDate;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final filteredTrips = _filteredTrips(appState.trips);
 
     return UiShell(
       title: 'Available Trips',
@@ -75,13 +135,124 @@ class _TripListScreenState extends State<TripListScreen> {
                   Center(child: Text('No trips yet. Create the first one.')),
                 ],
               )
-            : ListView.separated(
-                itemCount: appState.trips.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final trip = appState.trips[index];
-                  return _TripCard(trip: trip);
-                },
+            : ListView(
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Find a Trip',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<CollegeCity?>(
+                            initialValue: _originFilter,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Starting City',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: [
+                              const DropdownMenuItem<CollegeCity?>(
+                                value: null,
+                                child: Text('Any origin'),
+                              ),
+                              ...CollegeCity.values.map(
+                                (city) => DropdownMenuItem<CollegeCity?>(
+                                  value: city,
+                                  child: Text(
+                                    city.label,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _originFilter = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<CollegeCity?>(
+                            initialValue: _destinationFilter,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Destination City',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: [
+                              const DropdownMenuItem<CollegeCity?>(
+                                value: null,
+                                child: Text('Any destination'),
+                              ),
+                              ...CollegeCity.values.map(
+                                (city) => DropdownMenuItem<CollegeCity?>(
+                                  value: city,
+                                  child: Text(
+                                    city.label,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _destinationFilter = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _pickDepartureDate,
+                              icon: const Icon(Icons.event),
+                              label: Text(
+                                _departureDateFilter == null
+                                    ? 'Any departure date'
+                                    : 'Leaving: ${_dateLabel(_departureDateFilter!)}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _originFilter = null;
+                                  _destinationFilter = null;
+                                  _departureDateFilter = null;
+                                });
+                              },
+                              child: const Text('Clear Filters'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (filteredTrips.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 32),
+                      child: Center(
+                        child: Text('No trips match your selected route.'),
+                      ),
+                    )
+                  else
+                    ...List.generate(filteredTrips.length, (index) {
+                      final trip = filteredTrips[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _TripCard(trip: trip),
+                      );
+                    }),
+                ],
               ),
       ),
     );

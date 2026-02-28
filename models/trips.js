@@ -18,6 +18,39 @@ async function createTrip({
   return result.rows[0];
 }
 
+async function updateTrip({
+  tripId,
+  driverId,
+  originCity,
+  destinationCity,
+  departureTime,
+  seatsAvailable,
+  notes,
+}) {
+  const result = await db.query(
+    `UPDATE trips
+     SET
+       origin_city = $3,
+       destination_city = $4,
+       departure_time = $5,
+       seats_available = $6,
+       notes = $7
+     WHERE id = $1 AND driver_id = $2
+     RETURNING *`,
+    [
+      tripId,
+      driverId,
+      originCity,
+      destinationCity,
+      departureTime,
+      seatsAvailable,
+      notes || null,
+    ],
+  );
+
+  return result.rows[0] || null;
+}
+
 async function listTrips() {
   const result = await db.query(
     `SELECT
@@ -110,6 +143,7 @@ async function findViewerRequest(tripId, riderId) {
 
 module.exports = {
   createTrip,
+  updateTrip,
   listTrips,
   findTripById,
   listRideRequestsForTrip,

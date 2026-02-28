@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../models/auth_user.dart';
 import '../state/app_state.dart';
+import 'user_reviews_screen.dart';
 import 'ui_shell.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -234,6 +235,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => UserReviewsScreen(
+                                userId: user.id,
+                                title: 'Your Reviews',
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text('View My Reviews'),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     _buildField(controller: _nameController, label: 'Name'),
