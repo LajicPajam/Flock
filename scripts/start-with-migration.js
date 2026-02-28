@@ -5,7 +5,7 @@ const path = require('path');
 
 const db = require('../db');
 
-const MIGRATION_PATH = path.join(__dirname, '..', 'migrations', '001_init.sql');
+const MIGRATIONS_DIR = path.join(__dirname, '..', 'migrations');
 const MAX_ATTEMPTS = 30;
 const RETRY_DELAY_MS = 2000;
 
@@ -31,16 +31,22 @@ async function waitForDatabase() {
   }
 }
 
-async function runMigration() {
-  const sql = await fs.readFile(MIGRATION_PATH, 'utf8');
-  await db.query(sql);
-  console.log('Migration applied.');
+async function runMigrations() {
+  const migrationFiles = (await fs.readdir(MIGRATIONS_DIR))
+    .filter((fileName) => fileName.endsWith('.sql'))
+    .sort();
+
+  for (const fileName of migrationFiles) {
+    const sql = await fs.readFile(path.join(MIGRATIONS_DIR, fileName), 'utf8');
+    await db.query(sql);
+    console.log(`Applied migration: ${fileName}`);
+  }
 }
 
 async function start() {
   try {
     await waitForDatabase();
-    await runMigration();
+    await runMigrations();
     require('../server');
   } catch (error) {
     console.error('Backend startup failed.', error);

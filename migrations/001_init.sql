@@ -5,6 +5,13 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   phone_number TEXT NOT NULL,
   profile_photo_url TEXT NOT NULL,
+  is_driver BOOLEAN NOT NULL DEFAULT FALSE,
+  car_make TEXT,
+  car_model TEXT,
+  car_color TEXT,
+  car_plate_state TEXT,
+  car_plate_number TEXT,
+  car_description TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

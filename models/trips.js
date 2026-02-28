@@ -31,7 +31,13 @@ async function listTrips() {
        t.created_at,
        u.name AS driver_name,
        u.phone_number AS driver_phone_number,
-       u.profile_photo_url AS driver_profile_photo_url
+       u.profile_photo_url AS driver_profile_photo_url,
+       u.car_make AS driver_car_make,
+       u.car_model AS driver_car_model,
+       u.car_color AS driver_car_color,
+       u.car_plate_state AS driver_car_plate_state,
+       u.car_plate_number AS driver_car_plate_number,
+       u.car_description AS driver_car_description
      FROM trips t
      JOIN users u ON u.id = t.driver_id
      ORDER BY t.departure_time ASC, t.created_at DESC`,
@@ -53,7 +59,13 @@ async function findTripById(id) {
        t.created_at,
        u.name AS driver_name,
        u.phone_number AS driver_phone_number,
-       u.profile_photo_url AS driver_profile_photo_url
+       u.profile_photo_url AS driver_profile_photo_url,
+       u.car_make AS driver_car_make,
+       u.car_model AS driver_car_model,
+       u.car_color AS driver_car_color,
+       u.car_plate_state AS driver_car_plate_state,
+       u.car_plate_number AS driver_car_plate_number,
+       u.car_description AS driver_car_description
      FROM trips t
      JOIN users u ON u.id = t.driver_id
      WHERE t.id = $1`,

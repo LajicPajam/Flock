@@ -2,16 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../models/auth_user.dart';
 import '../models/chat_message.dart';
 import '../models/trip.dart';
 
 class ApiResult {
-  ApiResult({
-    required this.token,
-    required this.user,
-  });
+  ApiResult({required this.token, required this.user});
 
   final String token;
   final AuthUser user;
@@ -64,6 +62,13 @@ class ApiService {
     required String password,
     required String phoneNumber,
     required String profilePhotoUrl,
+    bool isDriver = false,
+    String? carMake,
+    String? carModel,
+    String? carColor,
+    String? carPlateState,
+    String? carPlateNumber,
+    String? carDescription,
   }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/auth/register'),
@@ -74,6 +79,13 @@ class ApiService {
         'password': password,
         'phoneNumber': phoneNumber,
         'profilePhotoUrl': profilePhotoUrl,
+        'isDriver': isDriver,
+        'carMake': carMake,
+        'carModel': carModel,
+        'carColor': carColor,
+        'carPlateState': carPlateState,
+        'carPlateNumber': carPlateNumber,
+        'carDescription': carDescription,
       }),
     );
 
@@ -87,10 +99,7 @@ class ApiService {
     final response = await http.post(
       Uri.parse('$_baseUrl/auth/login'),
       headers: _headers(),
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-      }),
+      body: jsonEncode({'email': email, 'password': password}),
     );
 
     return _parseAuthResult(response);
@@ -139,6 +148,121 @@ class ApiService {
     );
 
     _decode(response);
+  }
+
+  Future<String> uploadProfilePhoto({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    final contentType = _imageContentType(fileName);
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$_baseUrl/uploads/profile-photo'),
+    );
+
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'photo',
+        bytes,
+        filename: fileName,
+        contentType: contentType,
+      ),
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final data = _decode(response) as Map<String, dynamic>;
+    return data['photoUrl'] as String;
+  }
+
+  MediaType _imageContentType(String fileName) {
+    final lowerName = fileName.toLowerCase();
+
+    if (lowerName.endsWith('.png')) {
+      return MediaType('image', 'png');
+    }
+    if (lowerName.endsWith('.gif')) {
+      return MediaType('image', 'gif');
+    }
+    if (lowerName.endsWith('.webp')) {
+      return MediaType('image', 'webp');
+    }
+    if (lowerName.endsWith('.heic')) {
+      return MediaType('image', 'heic');
+    }
+    if (lowerName.endsWith('.heif')) {
+      return MediaType('image', 'heif');
+    }
+
+    return MediaType('image', 'jpeg');
+  }
+
+  Future<AuthUser> saveDriverProfile({
+    required String token,
+    required String carMake,
+    required String carModel,
+    required String carColor,
+    required String carPlateState,
+    required String carPlateNumber,
+    required String carDescription,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/users/me/driver-profile'),
+      headers: _headers(token),
+      body: jsonEncode({
+        'carMake': carMake,
+        'carModel': carModel,
+        'carColor': carColor,
+        'carPlateState': carPlateState,
+        'carPlateNumber': carPlateNumber,
+        'carDescription': carDescription,
+      }),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
+  }
+
+  Future<AuthUser> fetchCurrentUser({required String token}) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/me'),
+      headers: _headers(token),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
+  }
+
+  Future<AuthUser> updateCurrentUser({
+    required String token,
+    required String name,
+    required String phoneNumber,
+    required String profilePhotoUrl,
+    String? carMake,
+    String? carModel,
+    String? carColor,
+    String? carPlateState,
+    String? carPlateNumber,
+    String? carDescription,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/users/me'),
+      headers: _headers(token),
+      body: jsonEncode({
+        'name': name,
+        'phoneNumber': phoneNumber,
+        'profilePhotoUrl': profilePhotoUrl,
+        'carMake': carMake,
+        'carModel': carModel,
+        'carColor': carColor,
+        'carPlateState': carPlateState,
+        'carPlateNumber': carPlateNumber,
+        'carDescription': carDescription,
+      }),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
   }
 
   Future<void> requestSeat({
@@ -193,7 +317,8 @@ class ApiService {
     final response = await http.get(uri, headers: _headers(token));
     final data = _decode(response) as Map<String, dynamic>;
     final rawMessages = data['messages'] as List<dynamic>? ?? const [];
-    final rawAcceptedRiders = data['accepted_riders'] as List<dynamic>? ?? const [];
+    final rawAcceptedRiders =
+        data['accepted_riders'] as List<dynamic>? ?? const [];
 
     return MessagesResult(
       messages: rawMessages
@@ -215,10 +340,7 @@ class ApiService {
     final response = await http.post(
       Uri.parse('$_baseUrl/trips/$tripId/messages'),
       headers: _headers(token),
-      body: jsonEncode({
-        'messageText': messageText,
-        'receiverId': receiverId,
-      }),
+      body: jsonEncode({'messageText': messageText, 'receiverId': receiverId}),
     );
 
     _decode(response);

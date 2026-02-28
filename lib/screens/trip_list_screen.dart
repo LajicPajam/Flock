@@ -5,6 +5,7 @@ import '../models/city.dart';
 import '../models/trip.dart';
 import '../state/app_state.dart';
 import 'create_trip_screen.dart';
+import 'profile_screen.dart';
 import 'trip_detail_screen.dart';
 import 'ui_shell.dart';
 
@@ -32,6 +33,20 @@ class _TripListScreenState extends State<TripListScreen> {
       title: 'Available Trips',
       actions: [
         IconButton(
+          onPressed: () async {
+            final appState = context.read<AppState>();
+            await Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const ProfileScreen()),
+            );
+            if (!mounted) {
+              return;
+            }
+            await appState.refreshCurrentUser();
+          },
+          icon: const Icon(Icons.person),
+          tooltip: 'Profile',
+        ),
+        IconButton(
           onPressed: appState.logout,
           icon: const Icon(Icons.logout),
           tooltip: 'Log out',
@@ -41,9 +56,7 @@ class _TripListScreenState extends State<TripListScreen> {
         onPressed: () async {
           final appState = context.read<AppState>();
           await Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const CreateTripScreen(),
-            ),
+            MaterialPageRoute<void>(builder: (_) => const CreateTripScreen()),
           );
           if (!mounted) {
             return;
@@ -59,9 +72,7 @@ class _TripListScreenState extends State<TripListScreen> {
             ? ListView(
                 children: const [
                   SizedBox(height: 80),
-                  Center(
-                    child: Text('No trips yet. Create the first one.'),
-                  ),
+                  Center(child: Text('No trips yet. Create the first one.')),
                 ],
               )
             : ListView.separated(

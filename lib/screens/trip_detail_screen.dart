@@ -9,10 +9,7 @@ import 'messages_screen.dart';
 import 'ui_shell.dart';
 
 class TripDetailScreen extends StatefulWidget {
-  const TripDetailScreen({
-    super.key,
-    required this.tripId,
-  });
+  const TripDetailScreen({super.key, required this.tripId});
 
   final int tripId;
 
@@ -57,9 +54,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
     try {
       await context.read<AppState>().requestSeat(
-            tripId: widget.tripId,
-            message: _requestController.text.trim(),
-          );
+        tripId: widget.tripId,
+        message: _requestController.text.trim(),
+      );
       _requestController.clear();
       await _reload();
     } catch (error) {
@@ -67,7 +64,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
       );
     } finally {
       if (mounted) {
@@ -91,7 +90,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
       );
     }
   }
@@ -112,14 +113,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           if (snapshot.hasError) {
             return ListView(
               children: [
-                Text(
-                  snapshot.error.toString().replaceFirst('Exception: ', ''),
-                ),
+                Text(snapshot.error.toString().replaceFirst('Exception: ', '')),
                 const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: _reload,
-                  child: const Text('Retry'),
-                ),
+                OutlinedButton(onPressed: _reload, child: const Text('Retry')),
               ],
             );
           }
@@ -152,8 +148,41 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         Text('Notes: ${trip.notes}'),
                       ],
                       const Divider(height: 24),
-                      Text('Driver: ${trip.driverName}'),
-                      Text('Phone: ${trip.driverPhoneNumber}'),
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: trip.driverProfilePhotoUrl.isEmpty
+                                ? null
+                                : NetworkImage(trip.driverProfilePhotoUrl),
+                            child: trip.driverProfilePhotoUrl.isEmpty
+                                ? const Icon(Icons.person)
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Driver: ${trip.driverName}'),
+                                Text('Phone: ${trip.driverPhoneNumber}'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Car: ${trip.driverCarColor} ${trip.driverCarMake} ${trip.driverCarModel}'
+                            .trim(),
+                      ),
+                      Text(
+                        'Plate: ${trip.driverCarPlateState} ${trip.driverCarPlateNumber}'
+                            .trim(),
+                      ),
+                      if (trip.driverCarDescription.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text('Vehicle notes: ${trip.driverCarDescription}'),
+                      ],
                     ],
                   ),
                 ),
@@ -186,7 +215,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                             width: double.infinity,
                             child: FilledButton(
                               onPressed: _submitting ? null : _requestSeat,
-                              child: Text(_submitting ? 'Sending...' : 'Request Seat'),
+                              child: Text(
+                                _submitting ? 'Sending...' : 'Request Seat',
+                              ),
                             ),
                           ),
                         ] else
@@ -218,7 +249,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: AppColors.subtleBorder),
+                                  border: Border.all(
+                                    color: AppColors.subtleBorder,
+                                  ),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,12 +270,18 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                         Chip(label: Text(request.status)),
                                         if (request.status == 'pending')
                                           FilledButton.tonal(
-                                            onPressed: () => _updateRequest(request.id, true),
+                                            onPressed: () => _updateRequest(
+                                              request.id,
+                                              true,
+                                            ),
                                             child: const Text('Accept'),
                                           ),
                                         if (request.status == 'pending')
                                           OutlinedButton(
-                                            onPressed: () => _updateRequest(request.id, false),
+                                            onPressed: () => _updateRequest(
+                                              request.id,
+                                              false,
+                                            ),
                                             child: const Text('Reject'),
                                           ),
                                       ],

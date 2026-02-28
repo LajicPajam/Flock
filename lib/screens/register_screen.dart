@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
@@ -17,9 +20,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _photoController = TextEditingController(
-    text: 'https://placehold.co/120x120/png',
-  );
+  final ImagePicker _imagePicker = ImagePicker();
+  Uint8List? _photoBytes;
+  String? _photoName;
+  bool _uploadingPhoto = false;
 
   @override
   void dispose() {
@@ -27,12 +31,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
-    _photoController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    final file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 900,
+    );
+
+    if (file == null || !mounted) {
+      return;
+    }
+
+    final bytes = await file.readAsBytes();
+
+    setState(() {
+      _photoBytes = bytes;
+      _photoName = file.name;
+    });
   }
 
   Future<void> _submit(AppState appState) async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final photoBytes = _photoBytes;
+    final photoName = _photoName;
+    if (photoBytes == null || photoName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please choose a profile photo.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _uploadingPhoto = true;
+    });
+
+    String profilePhotoUrl;
+    try {
+      profilePhotoUrl = await appState.uploadProfilePhoto(
+        bytes: photoBytes,
+        fileName: photoName,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _uploadingPhoto = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
       return;
     }
 
@@ -41,8 +97,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       phoneNumber: _phoneController.text.trim(),
-      profilePhotoUrl: _photoController.text.trim(),
+      profilePhotoUrl: profilePhotoUrl,
     );
+
+    if (mounted) {
+      setState(() {
+        _uploadingPhoto = false;
+      });
+    }
 
     if (!mounted) {
       return;
@@ -54,9 +116,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (appState.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appState.errorMessage!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appState.errorMessage!)));
     }
   }
 
@@ -81,7 +143,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         labelText: 'Name',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (value) => value == null || value.trim().isEmpty
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
                           ? 'Enter your name.'
                           : null,
                     ),
@@ -92,7 +155,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         labelText: 'Email',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (value) => value == null || value.trim().isEmpty
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
                           ? 'Enter your email.'
                           : null,
                     ),
@@ -115,27 +179,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         labelText: 'Phone Number',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (value) => value == null || value.trim().isEmpty
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
                           ? 'Enter your phone number.'
                           : null,
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _photoController,
-                      decoration: const InputDecoration(
-                        labelText: 'Profile Photo URL',
-                        border: OutlineInputBorder(),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Profile Photo',
+                        style: Theme.of(context).textTheme.titleSmall,
                       ),
-                      validator: (value) => value == null || value.trim().isEmpty
-                          ? 'Enter a photo URL.'
-                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundImage: _photoBytes == null
+                              ? null
+                              : MemoryImage(_photoBytes!),
+                          child: _photoBytes == null
+                              ? const Icon(Icons.person)
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _uploadingPhoto ? null : _pickPhoto,
+                            icon: const Icon(Icons.photo_library_outlined),
+                            label: Text(
+                              _photoName == null ? 'Choose Photo' : _photoName!,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
-                        onPressed: appState.isLoading ? null : () => _submit(appState),
-                        child: Text(appState.isLoading ? 'Creating...' : 'Create Account'),
+                        onPressed: appState.isLoading || _uploadingPhoto
+                            ? null
+                            : () => _submit(appState),
+                        child: Text(
+                          appState.isLoading || _uploadingPhoto
+                              ? 'Creating...'
+                              : 'Create Account',
+                        ),
                       ),
                     ),
                   ],

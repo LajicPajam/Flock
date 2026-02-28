@@ -1,0 +1,131 @@
+const {
+  findUserById,
+  updateDriverProfile,
+  updateUserProfile,
+} = require('../models/users');
+
+function sanitizeUser(user) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone_number: user.phone_number,
+    profile_photo_url: user.profile_photo_url,
+    is_driver: user.is_driver,
+    car_make: user.car_make,
+    car_model: user.car_model,
+    car_color: user.car_color,
+    car_plate_state: user.car_plate_state,
+    car_plate_number: user.car_plate_number,
+    car_description: user.car_description,
+    created_at: user.created_at,
+  };
+}
+
+async function getCurrentUserHandler(req, res) {
+  try {
+    const user = await findUserById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    return res.json({ user: sanitizeUser(user) });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to load profile.' });
+  }
+}
+
+async function updateDriverProfileHandler(req, res) {
+  const {
+    carMake,
+    carModel,
+    carColor,
+    carPlateState,
+    carPlateNumber,
+    carDescription,
+  } = req.body;
+
+  if (!carMake || !carModel || !carColor || !carPlateState || !carPlateNumber) {
+    return res.status(400).json({
+      error: 'Car make, model, color, plate state, and plate number are required.',
+    });
+  }
+
+  try {
+    const user = await updateDriverProfile({
+      userId: req.user.id,
+      carMake: carMake.trim(),
+      carModel: carModel.trim(),
+      carColor: carColor.trim(),
+      carPlateState: carPlateState.trim(),
+      carPlateNumber: carPlateNumber.trim(),
+      carDescription: carDescription?.trim() || null,
+    });
+
+    return res.json({ user: sanitizeUser(user) });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to save driver profile.' });
+  }
+}
+
+async function updateCurrentUserHandler(req, res) {
+  const {
+    name,
+    phoneNumber,
+    profilePhotoUrl,
+    carMake,
+    carModel,
+    carColor,
+    carPlateState,
+    carPlateNumber,
+    carDescription,
+  } = req.body;
+
+  if (!name || !phoneNumber || !profilePhotoUrl) {
+    return res.status(400).json({
+      error: 'Name, phone number, and profile photo are required.',
+    });
+  }
+
+  const driverFields = [
+    carMake?.trim() || '',
+    carModel?.trim() || '',
+    carColor?.trim() || '',
+    carPlateState?.trim() || '',
+    carPlateNumber?.trim() || '',
+  ];
+
+  const anyDriverField = driverFields.some((value) => value.isNotEmpty);
+  const allDriverFields = driverFields.every((value) => value.isNotEmpty);
+
+  if (anyDriverField && !allDriverFields) {
+    return res.status(400).json({
+      error: 'To stay registered as a driver, fill in all required car fields.',
+    });
+  }
+
+  try {
+    const user = await updateUserProfile({
+      userId: req.user.id,
+      name: name.trim(),
+      phoneNumber: phoneNumber.trim(),
+      profilePhotoUrl: profilePhotoUrl.trim(),
+      carMake: allDriverFields ? carMake.trim() : null,
+      carModel: allDriverFields ? carModel.trim() : null,
+      carColor: allDriverFields ? carColor.trim() : null,
+      carPlateState: allDriverFields ? carPlateState.trim() : null,
+      carPlateNumber: allDriverFields ? carPlateNumber.trim() : null,
+      carDescription: carDescription?.trim() || null,
+    });
+
+    return res.json({ user: sanitizeUser(user) });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to update profile.' });
+  }
+}
+
+module.exports = {
+  getCurrentUserHandler,
+  updateDriverProfileHandler,
+  updateCurrentUserHandler,
+};

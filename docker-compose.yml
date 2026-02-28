@@ -29,6 +29,9 @@ services:
       JWT_SECRET: replace_me_for_local_dev
     ports:
       - "3000:3000"
+    volumes:
+      - flock_uploads:/app/uploads
 
 volumes:
   flock_pg_data:
+  flock_uploads:

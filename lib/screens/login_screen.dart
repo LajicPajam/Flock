@@ -39,9 +39,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (!success && appState.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(appState.errorMessage!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appState.errorMessage!)));
     }
   }
 
@@ -99,8 +99,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
-                        onPressed: appState.isLoading ? null : () => _submit(appState),
-                        child: Text(appState.isLoading ? 'Signing In...' : 'Sign In'),
+                        onPressed: appState.isLoading
+                            ? null
+                            : () => _submit(appState),
+                        child: Text(
+                          appState.isLoading ? 'Signing In...' : 'Sign In',
+                        ),
                       ),
                     ),
                     TextButton(

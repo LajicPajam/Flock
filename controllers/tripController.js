@@ -1,5 +1,6 @@
 const { getOptionalUser } = require('../middleware/auth');
 const { isValidCity } = require('../models/cities');
+const { findUserById } = require('../models/users');
 const {
   createTrip,
   listTrips,
@@ -30,6 +31,13 @@ async function createTripHandler(req, res) {
   }
 
   try {
+    const user = await findUserById(req.user.id);
+    if (!user?.is_driver) {
+      return res.status(403).json({
+        error: 'You must complete driver registration before posting a trip.',
+      });
+    }
+
     const trip = await createTrip({
       driverId: req.user.id,
       originCity,

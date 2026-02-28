@@ -12,6 +12,12 @@ class Trip {
     required this.driverName,
     required this.driverPhoneNumber,
     required this.driverProfilePhotoUrl,
+    required this.driverCarMake,
+    required this.driverCarModel,
+    required this.driverCarColor,
+    required this.driverCarPlateState,
+    required this.driverCarPlateNumber,
+    required this.driverCarDescription,
     this.viewerRequest,
     this.rideRequests = const [],
   });
@@ -26,6 +32,12 @@ class Trip {
   final String driverName;
   final String driverPhoneNumber;
   final String driverProfilePhotoUrl;
+  final String driverCarMake;
+  final String driverCarModel;
+  final String driverCarColor;
+  final String driverCarPlateState;
+  final String driverCarPlateNumber;
+  final String driverCarDescription;
   final RideRequest? viewerRequest;
   final List<RideRequest> rideRequests;
 
@@ -43,11 +55,21 @@ class Trip {
       driverName: json['driver_name'] as String? ?? 'Driver',
       driverPhoneNumber: json['driver_phone_number'] as String? ?? '',
       driverProfilePhotoUrl: json['driver_profile_photo_url'] as String? ?? '',
+      driverCarMake: json['driver_car_make'] as String? ?? '',
+      driverCarModel: json['driver_car_model'] as String? ?? '',
+      driverCarColor: json['driver_car_color'] as String? ?? '',
+      driverCarPlateState: json['driver_car_plate_state'] as String? ?? '',
+      driverCarPlateNumber: json['driver_car_plate_number'] as String? ?? '',
+      driverCarDescription: json['driver_car_description'] as String? ?? '',
       viewerRequest: json['viewer_request'] == null
           ? null
-          : RideRequest.fromJson(json['viewer_request'] as Map<String, dynamic>),
+          : RideRequest.fromJson(
+              json['viewer_request'] as Map<String, dynamic>,
+            ),
       rideRequests: rawRideRequests
-          .map((request) => RideRequest.fromJson(request as Map<String, dynamic>))
+          .map(
+            (request) => RideRequest.fromJson(request as Map<String, dynamic>),
+          )
           .toList(),
     );
   }

@@ -59,9 +59,9 @@ class MyApp extends StatelessWidget {
             ),
           ),
           textTheme: ThemeData.light().textTheme.apply(
-                bodyColor: AppColors.textInk,
-                displayColor: AppColors.textInk,
-              ),
+            bodyColor: AppColors.textInk,
+            displayColor: AppColors.textInk,
+          ),
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(
               foregroundColor: AppColors.primaryAccent,

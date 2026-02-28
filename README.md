@@ -93,10 +93,12 @@ flutter run -d android
 Once both backend and Flutter are running:
 
 1. Register a user.
-2. Create a trip as a driver.
-3. Register a second user if you want to test ride requests and messaging.
-4. Accept the rider request from the driver account.
-5. Open messages after acceptance.
+2. Upload a profile photo during registration.
+3. If you want to post trips, complete the required driver profile with your car details.
+4. Create a trip as a driver.
+5. Register a second user if you want to test ride requests and messaging.
+6. Accept the rider request from the driver account.
+7. Open messages after acceptance.
 
 ## What It Does
 
@@ -157,6 +159,7 @@ npm install
 
 ```bash
 psql "$DATABASE_URL" -f migrations/001_init.sql
+psql "$DATABASE_URL" -f migrations/002_driver_profiles.sql
 ```
 
 7. Start the API:
@@ -171,6 +174,8 @@ The backend defaults to `http://localhost:3000`.
 
 - `POST /auth/register`
 - `POST /auth/login`
+- `POST /uploads/profile-photo`
+- `POST /users/me/driver-profile`
 - `POST /trips`
 - `GET /trips`
 - `GET /trips/:id`

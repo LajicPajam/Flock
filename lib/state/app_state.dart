@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../models/auth_user.dart';
@@ -33,6 +35,13 @@ class AppState extends ChangeNotifier {
     required String password,
     required String phoneNumber,
     required String profilePhotoUrl,
+    bool isDriver = false,
+    String? carMake,
+    String? carModel,
+    String? carColor,
+    String? carPlateState,
+    String? carPlateNumber,
+    String? carDescription,
   }) async {
     return _runBusy(() async {
       final result = await _api.register(
@@ -41,6 +50,13 @@ class AppState extends ChangeNotifier {
         password: password,
         phoneNumber: phoneNumber,
         profilePhotoUrl: profilePhotoUrl,
+        isDriver: isDriver,
+        carMake: carMake,
+        carModel: carModel,
+        carColor: carColor,
+        carPlateState: carPlateState,
+        carPlateNumber: carPlateNumber,
+        carDescription: carDescription,
       );
       _token = result.token;
       _currentUser = result.user;
@@ -48,15 +64,37 @@ class AppState extends ChangeNotifier {
     });
   }
 
-  Future<bool> login({
-    required String email,
-    required String password,
+  Future<String> uploadProfilePhoto({
+    required Uint8List bytes,
+    required String fileName,
+  }) {
+    return _api.uploadProfilePhoto(bytes: bytes, fileName: fileName);
+  }
+
+  Future<void> saveDriverProfile({
+    required String carMake,
+    required String carModel,
+    required String carColor,
+    required String carPlateState,
+    required String carPlateNumber,
+    required String carDescription,
   }) async {
+    final user = await _api.saveDriverProfile(
+      token: _requireToken(),
+      carMake: carMake,
+      carModel: carModel,
+      carColor: carColor,
+      carPlateState: carPlateState,
+      carPlateNumber: carPlateNumber,
+      carDescription: carDescription,
+    );
+    _currentUser = user;
+    notifyListeners();
+  }
+
+  Future<bool> login({required String email, required String password}) async {
     return _runBusy(() async {
-      final result = await _api.login(
-        email: email,
-        password: password,
-      );
+      final result = await _api.login(email: email, password: password);
       _token = result.token;
       _currentUser = result.user;
       await loadTrips();
@@ -103,17 +141,11 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> acceptRequest(int requestId) async {
-    await _api.acceptRequest(
-      token: _requireToken(),
-      requestId: requestId,
-    );
+    await _api.acceptRequest(token: _requireToken(), requestId: requestId);
   }
 
   Future<void> rejectRequest(int requestId) async {
-    await _api.rejectRequest(
-      token: _requireToken(),
-      requestId: requestId,
-    );
+    await _api.rejectRequest(token: _requireToken(), requestId: requestId);
   }
 
   Future<MessagesResult> loadMessages({
@@ -138,6 +170,39 @@ class AppState extends ChangeNotifier {
       messageText: messageText,
       receiverId: receiverId,
     );
+  }
+
+  Future<void> refreshCurrentUser() async {
+    final user = await _api.fetchCurrentUser(token: _requireToken());
+    _currentUser = user;
+    notifyListeners();
+  }
+
+  Future<void> updateProfile({
+    required String name,
+    required String phoneNumber,
+    required String profilePhotoUrl,
+    String? carMake,
+    String? carModel,
+    String? carColor,
+    String? carPlateState,
+    String? carPlateNumber,
+    String? carDescription,
+  }) async {
+    final user = await _api.updateCurrentUser(
+      token: _requireToken(),
+      name: name,
+      phoneNumber: phoneNumber,
+      profilePhotoUrl: profilePhotoUrl,
+      carMake: carMake,
+      carModel: carModel,
+      carColor: carColor,
+      carPlateState: carPlateState,
+      carPlateNumber: carPlateNumber,
+      carDescription: carDescription,
+    );
+    _currentUser = user;
+    notifyListeners();
   }
 
   void logout() {

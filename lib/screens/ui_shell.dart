@@ -19,10 +19,7 @@ class UiShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        actions: actions,
-      ),
+      appBar: AppBar(title: Text(title), actions: actions),
       floatingActionButton: floatingActionButton,
       body: SafeArea(
         child: Center(
@@ -49,8 +46,12 @@ class UiShell extends StatelessWidget {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         SizedBox(height: 4),
-                        Text('No commercial transportation services are provided.'),
-                        Text('Drivers and riders participate at their own risk.'),
+                        Text(
+                          'No commercial transportation services are provided.',
+                        ),
+                        Text(
+                          'Drivers and riders participate at their own risk.',
+                        ),
                       ],
                     ),
                   ),

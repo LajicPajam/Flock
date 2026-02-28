@@ -40,9 +40,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   Future<_MessageViewData> _load() async {
     final result = await context.read<AppState>().loadMessages(
-          tripId: widget.tripId,
-          participantId: _selectedParticipantId,
-        );
+      tripId: widget.tripId,
+      participantId: _selectedParticipantId,
+    );
 
     if (_selectedParticipantId == null && result.participantId != null) {
       _selectedParticipantId = result.participantId;
@@ -72,10 +72,10 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
     try {
       await context.read<AppState>().sendMessage(
-            tripId: widget.tripId,
-            messageText: _messageController.text.trim(),
-            receiverId: _selectedParticipantId,
-          );
+        tripId: widget.tripId,
+        messageText: _messageController.text.trim(),
+        receiverId: _selectedParticipantId,
+      );
       _messageController.clear();
       await _refresh();
     } catch (error) {
@@ -83,7 +83,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
       );
     } finally {
       if (mounted) {
@@ -112,10 +114,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
               children: [
                 Text(snapshot.error.toString().replaceFirst('Exception: ', '')),
                 const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: _refresh,
-                  child: const Text('Retry'),
-                ),
+                OutlinedButton(onPressed: _refresh, child: const Text('Retry')),
               ],
             );
           }
@@ -160,10 +159,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         itemBuilder: (context, index) {
                           final message = data.messages[index];
                           final mine = message.senderId == currentUserId;
-                          return _MessageBubble(
-                            message: message,
-                            mine: mine,
-                          );
+                          return _MessageBubble(message: message, mine: mine);
                         },
                       ),
               ),
@@ -181,7 +177,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
-                    onPressed: _sending || (isDriver && _selectedParticipantId == null)
+                    onPressed:
+                        _sending || (isDriver && _selectedParticipantId == null)
                         ? null
                         : _send,
                     child: Text(_sending ? '...' : 'Send'),
@@ -197,10 +194,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
 }
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({
-    required this.message,
-    required this.mine,
-  });
+  const _MessageBubble({required this.message, required this.mine});
 
   final ChatMessage message;
   final bool mine;
@@ -218,8 +212,9 @@ class _MessageBubble extends StatelessWidget {
           border: Border.all(color: AppColors.subtleBorder),
         ),
         child: Column(
-          crossAxisAlignment:
-              mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: mine
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Text(
               message.senderName,
