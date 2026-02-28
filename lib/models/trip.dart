@@ -1,5 +1,17 @@
 import 'ride_request.dart';
 
+String formatDepartureTime(DateTime dt) {
+  final local = dt.toLocal();
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  final minute = local.minute.toString().padLeft(2, '0');
+  final period = local.hour >= 12 ? 'PM' : 'AM';
+  return '${months[local.month - 1]} ${local.day} at $hour:$minute $period';
+}
+
 class Trip {
   Trip({
     required this.id,
@@ -18,6 +30,7 @@ class Trip {
     required this.driverCarPlateState,
     required this.driverCarPlateNumber,
     required this.driverCarDescription,
+    this.status = 'upcoming',
     this.driverCarbonSavedGrams = 0,
     this.viewerRequest,
     this.rideRequests = const [],
@@ -30,6 +43,7 @@ class Trip {
   final DateTime departureTime;
   final int seatsAvailable;
   final String notes;
+  final String status;
   final String driverName;
   final String driverPhoneNumber;
   final String driverProfilePhotoUrl;
@@ -54,6 +68,7 @@ class Trip {
       departureTime: DateTime.parse(json['departure_time'] as String),
       seatsAvailable: json['seats_available'] as int,
       notes: json['notes'] as String? ?? '',
+      status: json['status'] as String? ?? 'upcoming',
       driverName: json['driver_name'] as String? ?? 'Driver',
       driverPhoneNumber: json['driver_phone_number'] as String? ?? '',
       driverProfilePhotoUrl: json['driver_profile_photo_url'] as String? ?? '',

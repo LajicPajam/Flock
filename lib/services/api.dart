@@ -303,6 +303,28 @@ class ApiService {
     return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
   }
 
+  Future<void> completeTrip({
+    required String token,
+    required int tripId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/trips/$tripId/complete'),
+      headers: _headers(token),
+    );
+    _decode(response);
+  }
+
+  Future<void> cancelTrip({
+    required String token,
+    required int tripId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/trips/$tripId/cancel'),
+      headers: _headers(token),
+    );
+    _decode(response);
+  }
+
   Future<void> requestSeat({
     required String token,
     required int tripId,

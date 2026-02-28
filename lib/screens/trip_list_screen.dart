@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/city.dart';
-import '../models/trip.dart';
+import '../models/trip.dart' show Trip, formatDepartureTime;
 import '../state/app_state.dart';
 import '../widgets/tier_badge.dart';
 import 'create_trip_screen.dart';
@@ -285,9 +285,10 @@ class _TripCard extends StatelessWidget {
                 children: [
                   Text('Driver: ${trip.driverName}'),
                   TierBadge(carbonSavedGrams: trip.driverCarbonSavedGrams),
+                  if (trip.status != 'upcoming') _StatusChip(status: trip.status),
                 ],
               ),
-              Text('Leaves: ${trip.departureTime.toLocal()}'),
+              Text('Leaves: ${formatDepartureTime(trip.departureTime)}'),
               Text('Seats: ${trip.seatsAvailable}'),
             ],
           ),
@@ -300,6 +301,40 @@ class _TripCard extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Color fg;
+    switch (status) {
+      case 'completed':
+        bg = const Color(0xFFD8F3DC);
+        fg = const Color(0xFF2D6A4F);
+      case 'cancelled':
+        bg = const Color(0xFFFFE0E0);
+        fg = const Color(0xFFC62828);
+      default:
+        bg = const Color(0xFFE3F2FD);
+        fg = const Color(0xFF1565C0);
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        status[0].toUpperCase() + status.substring(1),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg),
       ),
     );
   }

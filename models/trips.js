@@ -61,6 +61,7 @@ async function listTrips() {
        t.departure_time,
        t.seats_available,
        t.notes,
+       t.status,
        t.created_at,
        u.name AS driver_name,
        u.phone_number AS driver_phone_number,
@@ -89,6 +90,7 @@ async function findTripById(id) {
        t.departure_time,
        t.seats_available,
        t.notes,
+       t.status,
        t.created_at,
        u.name AS driver_name,
        u.phone_number AS driver_phone_number,
@@ -141,6 +143,27 @@ async function findViewerRequest(tripId, riderId) {
   return result.rows[0] || null;
 }
 
+async function autoCompleteExpiredTrips() {
+  await db.query(
+    `UPDATE trips
+     SET status = 'completed'
+     WHERE status = 'upcoming'
+       AND departure_time < NOW()
+       AND EXISTS (
+         SELECT 1 FROM ride_requests rr
+         WHERE rr.trip_id = trips.id AND rr.status = 'accepted'
+       )`,
+  );
+}
+
+async function setTripStatus(tripId, status) {
+  const result = await db.query(
+    `UPDATE trips SET status = $2 WHERE id = $1 RETURNING *`,
+    [tripId, status],
+  );
+  return result.rows[0] || null;
+}
+
 module.exports = {
   createTrip,
   updateTrip,
@@ -148,4 +171,6 @@ module.exports = {
   findTripById,
   listRideRequestsForTrip,
   findViewerRequest,
+  autoCompleteExpiredTrips,
+  setTripStatus,
 };

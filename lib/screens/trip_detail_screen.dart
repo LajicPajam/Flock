@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/city.dart';
-import '../models/trip.dart';
+import '../models/trip.dart' show Trip, formatDepartureTime;
 import '../state/app_state.dart';
 import 'create_trip_screen.dart';
 import 'leave_review_screen.dart';
@@ -132,6 +132,58 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     await _reload();
   }
 
+  Future<void> _completeTrip(Trip trip) async {
+    try {
+      await context.read<AppState>().completeTrip(trip.id);
+      await _reload();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Trip marked as completed!')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
+
+  Future<void> _cancelTrip(Trip trip) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Trip?'),
+        content: const Text('This cannot be undone. Are you sure?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Yes, Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await context.read<AppState>().cancelTrip(trip.id);
+      await _reload();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Trip cancelled.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -183,14 +235,37 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 8),
-                      Text('Departure: ${trip.departureTime.toLocal()}'),
+                      Text('Departure: ${formatDepartureTime(trip.departureTime)}'),
                       Text('Seats available: ${trip.seatsAvailable}'),
-                      if (isDriver) ...[
+                      if (trip.status != 'upcoming') ...[
+                        const SizedBox(height: 8),
+                        _StatusBanner(status: trip.status),
+                      ],
+                      if (isDriver && trip.status == 'upcoming') ...[
                         const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: () => _editTrip(trip),
-                          icon: const Icon(Icons.edit),
-                          label: const Text('Edit This Trip'),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () => _editTrip(trip),
+                              icon: const Icon(Icons.edit),
+                              label: const Text('Edit'),
+                            ),
+                            FilledButton.icon(
+                              onPressed: () => _completeTrip(trip),
+                              icon: const Icon(Icons.check_circle_outline),
+                              label: const Text('Complete'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () => _cancelTrip(trip),
+                              icon: const Icon(Icons.cancel_outlined),
+                              label: const Text('Cancel'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFC62828),
+                                side: const BorderSide(color: Color(0xFFC62828)),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                       if (trip.notes.isNotEmpty) ...[
@@ -433,6 +508,55 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _StatusBanner extends StatelessWidget {
+  const _StatusBanner({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Color fg;
+    final IconData icon;
+    final String label;
+    switch (status) {
+      case 'completed':
+        bg = const Color(0xFFD8F3DC);
+        fg = const Color(0xFF2D6A4F);
+        icon = Icons.check_circle;
+        label = 'Completed';
+      case 'cancelled':
+        bg = const Color(0xFFFFE0E0);
+        fg = const Color(0xFFC62828);
+        icon = Icons.cancel;
+        label = 'Cancelled';
+      default:
+        bg = const Color(0xFFE3F2FD);
+        fg = const Color(0xFF1565C0);
+        icon = Icons.schedule;
+        label = 'Upcoming';
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: fg),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w600, color: fg),
+          ),
+        ],
       ),
     );
   }

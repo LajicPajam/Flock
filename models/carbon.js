@@ -34,14 +34,16 @@ async function getCarbonSavedForUser(userId) {
     `SELECT t.origin_city, t.destination_city
      FROM ride_requests rr
      JOIN trips t ON rr.trip_id = t.id
-     WHERE rr.rider_id = $1 AND rr.status = 'accepted' AND t.departure_time < NOW()`,
+     WHERE rr.rider_id = $1 AND rr.status = 'accepted'
+       AND (t.status = 'completed' OR t.departure_time < NOW())`,
     [userId],
   );
 
   const driverResult = await db.query(
     `SELECT t.origin_city, t.destination_city
      FROM trips t
-     WHERE t.driver_id = $1 AND t.departure_time < NOW()
+     WHERE t.driver_id = $1
+       AND (t.status = 'completed' OR t.departure_time < NOW())
        AND EXISTS (
          SELECT 1 FROM ride_requests rr
          WHERE rr.trip_id = t.id AND rr.status = 'accepted'
@@ -77,14 +79,16 @@ async function getCarbonSavedForUsers(userIds) {
     `SELECT rr.rider_id AS user_id, t.origin_city, t.destination_city
      FROM ride_requests rr
      JOIN trips t ON rr.trip_id = t.id
-     WHERE rr.rider_id = ANY($1) AND rr.status = 'accepted' AND t.departure_time < NOW()`,
+     WHERE rr.rider_id = ANY($1) AND rr.status = 'accepted'
+       AND (t.status = 'completed' OR t.departure_time < NOW())`,
     [userIds],
   );
 
   const driverResult = await db.query(
     `SELECT t.driver_id AS user_id, t.origin_city, t.destination_city
      FROM trips t
-     WHERE t.driver_id = ANY($1) AND t.departure_time < NOW()
+     WHERE t.driver_id = ANY($1)
+       AND (t.status = 'completed' OR t.departure_time < NOW())
        AND EXISTS (
          SELECT 1 FROM ride_requests rr
          WHERE rr.trip_id = t.id AND rr.status = 'accepted'

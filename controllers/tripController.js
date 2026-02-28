@@ -9,6 +9,8 @@ const {
   findTripById,
   listRideRequestsForTrip,
   findViewerRequest,
+  autoCompleteExpiredTrips,
+  setTripStatus,
 } = require('../models/trips');
 
 async function createTripHandler(req, res) {
@@ -110,6 +112,7 @@ async function updateTripHandler(req, res) {
 
 async function listTripsHandler(_req, res) {
   try {
+    await autoCompleteExpiredTrips();
     const trips = await listTrips();
     const driverIds = [...new Set(trips.map((t) => t.driver_id))];
     const carbonMap = await getCarbonSavedForUsers(driverIds);
@@ -170,9 +173,49 @@ async function getTripByIdHandler(req, res) {
   }
 }
 
+async function completeTripHandler(req, res) {
+  try {
+    const trip = await findTripById(req.params.id);
+    if (!trip) {
+      return res.status(404).json({ error: 'Trip not found.' });
+    }
+    if (trip.driver_id !== req.user.id) {
+      return res.status(403).json({ error: 'Only the driver can complete this trip.' });
+    }
+    if (trip.status !== 'upcoming') {
+      return res.status(400).json({ error: `Trip is already ${trip.status}.` });
+    }
+    await setTripStatus(trip.id, 'completed');
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to complete trip.' });
+  }
+}
+
+async function cancelTripHandler(req, res) {
+  try {
+    const trip = await findTripById(req.params.id);
+    if (!trip) {
+      return res.status(404).json({ error: 'Trip not found.' });
+    }
+    if (trip.driver_id !== req.user.id) {
+      return res.status(403).json({ error: 'Only the driver can cancel this trip.' });
+    }
+    if (trip.status !== 'upcoming') {
+      return res.status(400).json({ error: `Trip is already ${trip.status}.` });
+    }
+    await setTripStatus(trip.id, 'cancelled');
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to cancel trip.' });
+  }
+}
+
 module.exports = {
   createTripHandler,
   updateTripHandler,
   listTripsHandler,
   getTripByIdHandler,
+  completeTripHandler,
+  cancelTripHandler,
 };

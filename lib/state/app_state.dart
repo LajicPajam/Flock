@@ -152,6 +152,16 @@ class AppState extends ChangeNotifier {
     await loadTrips();
   }
 
+  Future<void> completeTrip(int tripId) async {
+    await _api.completeTrip(token: _requireToken(), tripId: tripId);
+    await loadTrips();
+  }
+
+  Future<void> cancelTrip(int tripId) async {
+    await _api.cancelTrip(token: _requireToken(), tripId: tripId);
+    await loadTrips();
+  }
+
   Future<void> requestSeat({
     required int tripId,
     required String message,
