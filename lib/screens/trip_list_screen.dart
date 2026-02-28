@@ -332,13 +332,19 @@ class _TripListScreenState extends State<TripListScreen> {
         },
         child: appState.trips.isEmpty
             ? ListView(
-                children: const [
-                  SizedBox(height: 80),
-                  Center(child: Text('No trips yet. Create the first one.')),
+                children: [
+                  const _AvailableTripsHero(),
+                  const SizedBox(height: 24),
+                  const Center(
+                    child: Text('No trips yet. Create the first one.'),
+                  ),
+                  const SizedBox(height: 80),
                 ],
               )
             : ListView(
                 children: [
+                  const _AvailableTripsHero(),
+                  const SizedBox(height: 24),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -816,6 +822,101 @@ class _StatusChip extends StatelessWidget {
         status.toUpperCase(),
         style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700),
       ),
+    );
+  }
+}
+
+class _AvailableTripsHero extends StatelessWidget {
+  const _AvailableTripsHero();
+
+  @override
+  Widget build(BuildContext context) {
+    const tagline =
+        'Carpool to thousands of destinations at low prices';
+    const heroHeight = 200.0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useRow = constraints.maxWidth >= 500;
+        return SizedBox(
+          height: heroHeight,
+          child: useRow
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 24, 24, 24),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            tagline,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryGreen,
+                                  height: 1.2,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.asset(
+                            'assets/carpool_hero.png',
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 24, 0, 12),
+                      child: Text(
+                        tagline,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryGreen,
+                              height: 1.2,
+                            ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.asset(
+                            'assets/carpool_hero.png',
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+        );
+      },
     );
   }
 }
