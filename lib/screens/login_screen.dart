@@ -57,7 +57,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -69,10 +68,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit(AppState appState) async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
     final success = await appState.login(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -103,7 +98,6 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Padding(
             padding: const EdgeInsets.all(22),
             child: Form(
-              key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -150,13 +144,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
-                    child: FilledButton(
-                      onPressed: appState.isLoading
-                          ? null
-                          : () => _submit(appState),
-                      child: Text(
-                        appState.isLoading ? 'Signing In...' : 'Sign In',
-                      ),
+                    child: Builder(
+                      builder: (buttonContext) {
+                        return FilledButton(
+                          onPressed: appState.isLoading
+                              ? null
+                              : () {
+                                  final form = Form.maybeOf(buttonContext);
+                                  if (form != null && !form.validate()) {
+                                    return;
+                                  }
+                                  _submit(appState);
+                                },
+                          child: Text(
+                            appState.isLoading ? 'Signing In...' : 'Sign In',
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -257,95 +261,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       tooltip: 'Settings',
                     ),
                   ],
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 480),
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(22),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Sign In',
-                                style: Theme.of(context).textTheme.headlineSmall,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Use the same email and password you registered with.',
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: Colors.black54),
-                              ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _emailController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Email',
-                                  border: OutlineInputBorder(),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Enter your email.';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                              TextFormField(
-                                controller: _passwordController,
-                                obscureText: true,
-                                decoration: const InputDecoration(
-                                  labelText: 'Password',
-                                  border: OutlineInputBorder(),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Enter your password.';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              SizedBox(
-                                width: double.infinity,
-                                child: FilledButton(
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: AppColors.actionBlue,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  onPressed: appState.isLoading ? null : () => _submit(appState),
-                                  child: Text(
-                                    appState.isLoading ? 'Signing In...' : 'Sign In',
-                                  ),
-                                ),
-                              ),
-                              TextButton(
-                                style: TextButton.styleFrom(
-                                  foregroundColor: AppColors.actionBlue,
-                                ),
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => const RegisterScreen(),
-                                    ),
-                                  );
-                                },
-                                child: const Text('New here? Create an account'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
               ),
             ),
