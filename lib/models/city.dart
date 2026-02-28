@@ -55,13 +55,9 @@ enum CollegeCity {
   tempeAz('tempe_az', 'Tempe, AZ', 33.4255, -111.9400);
 
   /// Cities supported by Flock for trip origins/destinations.
-  static const supportedCities = [
-    CollegeCity.provoUt,
-    CollegeCity.loganUt,
-    CollegeCity.saltLakeCityUt,
-    CollegeCity.rexburgId,
-    CollegeCity.tempeAz,
-  ];
+  static final List<CollegeCity> supportedCities = List.unmodifiable(
+    CollegeCity.values,
+  );
 
   const CollegeCity(this.apiValue, this.label, this.latitude, this.longitude);
 

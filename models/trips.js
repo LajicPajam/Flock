@@ -20,6 +20,8 @@ const TRIP_SELECT_FIELDS = `SELECT
   u.name AS driver_name,
   u.phone_number AS driver_phone_number,
   u.profile_photo_url AS driver_profile_photo_url,
+  u.is_student_verified AS driver_is_student_verified,
+  u.verified_school_name AS driver_verified_school_name,
   u.car_make AS driver_car_make,
   u.car_model AS driver_car_model,
   u.car_color AS driver_car_color,

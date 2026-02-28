@@ -1,6 +1,6 @@
 # Flock Carpool MVP
 
-Minimal college-focused carpool matching prototype built for local development with Flutter (web, iOS, Android) and Node.js/Express/PostgreSQL.
+Minimal carpool matching prototype built for local development with Flutter (web, iOS, Android) and Node.js/Express/PostgreSQL. The product is primarily aimed at student travel use cases like away games, weekend rides, airport runs, and trips home, but it is not restricted to students.
 
 ## Local Development Quickstart
 
@@ -103,7 +103,7 @@ Once both backend and Flutter are running:
 ## What It Does
 
 - Students register with email and password.
-- Drivers post trips between a fixed list of college towns in the Mormon Belt.
+- Drivers post trips between supported cities across the U.S.
 - Riders request seats with a short note.
 - Drivers accept or reject requests.
 - Messages unlock only after a request is accepted.
@@ -111,13 +111,9 @@ Once both backend and Flutter are running:
 
 ## Supported Cities
 
-Cities are hard-coded as string enums in both backend and frontend:
-
-- `provo_ut` -> Provo, UT (BYU)
-- `logan_ut` -> Logan, UT (USU)
-- `salt_lake_city_ut` -> Salt Lake City, UT (University of Utah)
-- `rexburg_id` -> Rexburg, ID (BYU-Idaho)
-- `tempe_az` -> Tempe, AZ (ASU)
+Cities are hard-coded as string enums in both backend and frontend. The app
+ships with a broader list of major U.S. cities rather than the original small
+prototype list.
 
 ## Backend Setup
 

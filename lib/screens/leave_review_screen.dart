@@ -85,29 +85,37 @@ class _LeaveReviewScreenState extends State<LeaveReviewScreen> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<int>(
-                    initialValue: _rating,
-                    decoration: const InputDecoration(
-                      labelText: 'Rating',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: List.generate(
-                      5,
-                      (index) => DropdownMenuItem(
-                        value: 5 - index,
-                        child: Text(
-                          '${5 - index} star${5 - index == 1 ? '' : 's'}',
-                        ),
-                      ),
-                    ),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _rating = value;
-                        });
-                      }
-                    },
+                  Text(
+                    'Rating',
+                    style: Theme.of(context).textTheme.titleSmall,
                   ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    children: List.generate(5, (index) {
+                      final starValue = index + 1;
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(999),
+                        onTap: () {
+                          setState(() {
+                            _rating = starValue;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: Icon(
+                            starValue <= _rating
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
+                            size: 34,
+                            color: const Color(0xFFE0A106),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 6),
+                  Text('$_rating out of 5 stars'),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _commentController,

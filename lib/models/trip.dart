@@ -43,6 +43,8 @@ class Trip {
     required this.driverName,
     required this.driverPhoneNumber,
     required this.driverProfilePhotoUrl,
+    required this.driverIsStudentVerified,
+    this.driverVerifiedSchoolName,
     required this.driverCarMake,
     required this.driverCarModel,
     required this.driverCarColor,
@@ -74,6 +76,8 @@ class Trip {
   final String driverName;
   final String driverPhoneNumber;
   final String driverProfilePhotoUrl;
+  final bool driverIsStudentVerified;
+  final String? driverVerifiedSchoolName;
   final String driverCarMake;
   final String driverCarModel;
   final String driverCarColor;
@@ -124,6 +128,9 @@ class Trip {
       driverName: json['driver_name'] as String? ?? 'Driver',
       driverPhoneNumber: json['driver_phone_number'] as String? ?? '',
       driverProfilePhotoUrl: json['driver_profile_photo_url'] as String? ?? '',
+      driverIsStudentVerified:
+          json['driver_is_student_verified'] as bool? ?? false,
+      driverVerifiedSchoolName: json['driver_verified_school_name'] as String?,
       driverCarMake: json['driver_car_make'] as String? ?? '',
       driverCarModel: json['driver_car_model'] as String? ?? '',
       driverCarColor: json['driver_car_color'] as String? ?? '',

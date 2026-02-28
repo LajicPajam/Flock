@@ -10,8 +10,10 @@ void main() {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign In'), findsWidgets);
+    expect(find.text('find your flock'), findsOneWidget);
     expect(find.byIcon(Icons.settings), findsOneWidget);
-    expect(find.text('New here? Create an account'), findsOneWidget);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(find.text('Why Flock?'), findsOneWidget);
   });
 }

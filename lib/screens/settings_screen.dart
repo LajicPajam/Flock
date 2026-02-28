@@ -29,7 +29,7 @@ class SettingsScreen extends StatelessWidget {
               _SettingsCard(
                 title: 'About This App',
                 body:
-                    'Flock is a college-focused carpool app for students traveling between supported college towns. Drivers post trips they are already planning to take, and riders request to join.',
+                    'Flock is a carpool app built with students in mind, especially for campus weekends, away games, airport rides, and trips home. Drivers post trips they are already planning to take, and riders request to join. Anyone can use it, but the experience is designed around common student travel patterns.',
                 maxBodyWidth: maxW,
                 padding: _cardPadding(context),
               ),

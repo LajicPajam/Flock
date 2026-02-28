@@ -773,6 +773,51 @@ SELECT
   rider.id,
   driver.id,
   5,
+  'Clear communication, smooth ride, and super easy pickup.'
+FROM trips t
+JOIN users driver ON driver.email = 'seed+brad@flock.local'
+JOIN users rider ON rider.email = 'seed+emma@flock.local'
+WHERE t.notes = '[seed-demo] Spanish Fork to Scottsdale road trip'
+ON CONFLICT (trip_id, reviewer_id, reviewee_id) DO UPDATE SET
+  rating = EXCLUDED.rating,
+  comment = EXCLUDED.comment;
+
+INSERT INTO reviews (trip_id, reviewer_id, reviewee_id, rating, comment)
+SELECT
+  t.id,
+  rider.id,
+  driver.id,
+  4,
+  'Pickup was easy to find and the whole ride felt organized.'
+FROM trips t
+JOIN users driver ON driver.email = 'seed+tessa@flock.local'
+JOIN users rider ON rider.email = 'seed+josh@flock.local'
+WHERE t.notes = '[seed-demo] Lehi to Idaho Falls'
+ON CONFLICT (trip_id, reviewer_id, reviewee_id) DO UPDATE SET
+  rating = EXCLUDED.rating,
+  comment = EXCLUDED.comment;
+
+INSERT INTO reviews (trip_id, reviewer_id, reviewee_id, rating, comment)
+SELECT
+  t.id,
+  rider.id,
+  driver.id,
+  5,
+  'Stayed in touch the whole way and made the long route feel easy.'
+FROM trips t
+JOIN users driver ON driver.email = 'seed+caleb@flock.local'
+JOIN users rider ON rider.email = 'seed+liam@flock.local'
+WHERE t.notes = '[seed-demo] Provo to Amarillo long haul'
+ON CONFLICT (trip_id, reviewer_id, reviewee_id) DO UPDATE SET
+  rating = EXCLUDED.rating,
+  comment = EXCLUDED.comment;
+
+INSERT INTO reviews (trip_id, reviewer_id, reviewee_id, rating, comment)
+SELECT
+  t.id,
+  rider.id,
+  driver.id,
+  5,
   'Easy coordination and exactly on time.'
 FROM trips t
 JOIN users driver ON driver.email = 'seed+noah@flock.local'

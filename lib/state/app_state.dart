@@ -364,6 +364,32 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<StudentVerificationResult> startStudentVerification({
+    required String studentEmail,
+  }) async {
+    final result = await _api.startStudentVerification(
+      token: _requireToken(),
+      studentEmail: studentEmail,
+    );
+    _currentUser = result.user;
+    await _persistSession();
+    notifyListeners();
+    return result;
+  }
+
+  Future<StudentVerificationResult> confirmStudentVerification({
+    required String code,
+  }) async {
+    final result = await _api.confirmStudentVerification(
+      token: _requireToken(),
+      code: code,
+    );
+    _currentUser = result.user;
+    await _persistSession();
+    notifyListeners();
+    return result;
+  }
+
   Future<void> createReview({
     required int tripId,
     required int revieweeId,

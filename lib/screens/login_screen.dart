@@ -35,7 +35,7 @@ class _HeroImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Image.asset(
@@ -87,6 +87,145 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(appState.errorMessage!)));
     }
+  }
+
+  void _showSocialComingSoon(String provider) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$provider sign-in is coming soon.')),
+    );
+  }
+
+  Widget _buildSignInCard(AppState appState) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Sign In',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Use the same email and password you registered with.',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Enter your email.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Enter your password.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: appState.isLoading
+                          ? null
+                          : () => _submit(appState),
+                      child: Text(
+                        appState.isLoading ? 'Signing In...' : 'Sign In',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final dividerLabel = Text(
+                        'or continue with',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.black54,
+                        ),
+                      );
+
+                      if (constraints.maxWidth < 260) {
+                        return Center(child: dividerLabel);
+                      }
+
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: AppColors.subtleBorder,
+                              thickness: 1,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: dividerLabel,
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: AppColors.subtleBorder,
+                              thickness: 1,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  _GoogleContinueButton(
+                    onPressed: () => _showSocialComingSoon('Google'),
+                  ),
+                  const SizedBox(height: 10),
+                  _SocialSignInButton(
+                    label: 'Continue with Apple',
+                    leading: const _AppleGlyph(),
+                    backgroundColor: AppColors.textInk,
+                    borderColor: AppColors.textInk,
+                    foregroundColor: Colors.white,
+                    onPressed: () => _showSocialComingSoon('Apple'),
+                  ),
+                  const SizedBox(height: 6),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const RegisterScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text('New here? Create an account'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -213,30 +352,41 @@ class _LoginScreenState extends State<LoginScreen> {
             SliverToBoxAdapter(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final useRow = constraints.maxWidth >= 600;
-                  return SizedBox(
-                    height: heroHeight,
-                    child: useRow
-                        ? Row(
-                            children: [
-                              Expanded(
-                                child: const _HeroSlogan(),
+                  final useRow = constraints.maxWidth >= 980;
+                  if (useRow) {
+                    return SizedBox(
+                      height: heroHeight + 60,
+                      child: Row(
+                        children: [
+                          const Expanded(child: _HeroSlogan()),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 24,
                               ),
-                              Expanded(
-                                child: const _HeroImage(),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            children: [
-                              Expanded(
-                                child: const _HeroSlogan(),
-                              ),
-                              Expanded(
-                                child: const _HeroImage(),
-                              ),
-                            ],
+                              child: _buildSignInCard(appState),
+                            ),
                           ),
+                          const Expanded(child: _HeroImage()),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Column(
+                      children: [
+                        const _HeroSlogan(),
+                        _buildSignInCard(appState),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: heroHeight * 0.58,
+                          child: const _HeroImage(),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -263,6 +413,202 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+class _GoogleContinueButton extends StatelessWidget {
+  const _GoogleContinueButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SocialSignInButton(
+      label: 'Continue with Google',
+      leading: const _GoogleGlyph(size: 22),
+      onPressed: onPressed,
+    );
+  }
+}
+
+class _SocialSignInButton extends StatelessWidget {
+  const _SocialSignInButton({
+    required this.label,
+    required this.leading,
+    required this.onPressed,
+    this.backgroundColor = Colors.white,
+    this.borderColor = AppColors.subtleBorder,
+    this.foregroundColor = AppColors.textInk,
+  });
+
+  final String label;
+  final Widget leading;
+  final VoidCallback onPressed;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          backgroundColor: backgroundColor,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          side: BorderSide(color: borderColor),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          foregroundColor: foregroundColor,
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 28,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: leading,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: foregroundColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 22),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GoogleGlyph extends StatelessWidget {
+  const _GoogleGlyph({this.size = 34});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Image.network(
+        'https://developers.google.com/identity/images/g-logo.png',
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return CustomPaint(
+            painter: const _GoogleGlyphPainter(),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AppleGlyph extends StatelessWidget {
+  const _AppleGlyph();
+
+  @override
+  Widget build(BuildContext context) {
+    final platform = Theme.of(context).platform;
+    final useAppleGlyph =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+
+    if (useAppleGlyph) {
+      return const SizedBox(
+        width: 24,
+        height: 24,
+        child: Center(
+          child: Text(
+            '\uF8FF',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 27,
+              height: 1,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox(
+      width: 24,
+      height: 24,
+      child: Center(
+        child: Icon(
+          Icons.apple,
+          color: Colors.white,
+          size: 24,
+        ),
+      ),
+    );
+  }
+}
+
+class _GoogleGlyphPainter extends CustomPainter {
+  const _GoogleGlyphPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = size.width * 0.18;
+    final radius = (size.width - stroke) / 2;
+    final center = Offset(size.width / 2, size.height / 2);
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+
+    paint.color = const Color(0xFFEA4335);
+    canvas.drawArc(rect, 3.70, 1.42, false, paint);
+
+    paint.color = const Color(0xFFFBBC05);
+    canvas.drawArc(rect, 2.72, 1.00, false, paint);
+
+    paint.color = const Color(0xFF34A853);
+    canvas.drawArc(rect, 1.86, 1.28, false, paint);
+
+    paint.color = const Color(0xFF4285F4);
+    canvas.drawArc(rect, -0.28, 2.02, false, paint);
+
+    final cutout = Paint()..color = Colors.white;
+    final cutoutWidth = stroke * 1.45;
+    canvas.drawRect(
+      Rect.fromLTWH(
+        center.dx + size.width * 0.10,
+        center.dy - stroke * 0.95,
+        cutoutWidth,
+        stroke * 1.9,
+      ),
+      cutout,
+    );
+
+    final bar = Paint()
+      ..color = const Color(0xFF4285F4)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = stroke * 0.92;
+    canvas.drawLine(
+      Offset(center.dx + size.width * 0.02, center.dy),
+      Offset(center.dx + size.width * 0.34, center.dy),
+      bar,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 class _WhyFlockSection extends StatelessWidget {
   const _WhyFlockSection();
 
@@ -273,8 +619,8 @@ class _WhyFlockSection extends StatelessWidget {
       children: [
         Text(
           'Why Flock?',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
                 color: AppColors.primaryGreen,
               ),
         ),
@@ -286,7 +632,8 @@ class _WhyFlockSection extends StatelessWidget {
               _BenefitItem(
                 icon: Icons.savings_outlined,
                 title: 'Save money',
-                body: 'Split gas and tolls with fellow students instead of driving alone.',
+                body:
+                    'Split gas and tolls for game days, breaks, and weekend trips instead of driving solo.',
               ),
               _BenefitItem(
                 icon: Icons.eco_outlined,
@@ -296,7 +643,8 @@ class _WhyFlockSection extends StatelessWidget {
               _BenefitItem(
                 icon: Icons.groups_outlined,
                 title: 'Meet your flock',
-                body: 'Connect with students from BYU, USU, U of U, BYU-Idaho, and ASU.',
+                body:
+                    'Perfect for students heading to rival campuses, airports, concerts, and home for the weekend.',
               ),
             ];
             if (useRow) {
@@ -352,8 +700,8 @@ class _BenefitItem extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
                   color: AppColors.textInk,
                 ),
           ),
@@ -387,16 +735,17 @@ class _QuoteSection extends StatelessWidget {
           Icon(Icons.format_quote, size: 32, color: AppColors.primaryGreen),
           const SizedBox(height: 12),
           Text(
-            'Perfect for holiday breaks and weekend trips. I carpool home with other students every month—saves gas, cuts emissions, and the ride goes faster with good company.',
+            'Perfect for away games, weekend trips, and rides home on break. I use Flock to find people already headed my way, and it makes the whole trip easier.',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontStyle: FontStyle.italic,
-                  color: AppColors.textInk.withValues(alpha: 0.9),
+                  color: AppColors.textInk.withValues(alpha: 0.86),
+                  height: 1.6,
                 ),
           ),
           const SizedBox(height: 12),
           Text(
-            '— Flock rider',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            '— Flock student rider',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.primaryGreen,
                 ),
@@ -406,4 +755,3 @@ class _QuoteSection extends StatelessWidget {
     );
   }
 }
-

@@ -30,7 +30,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       entries: [
         _LeaderboardEntry(
           name: 'Avery Turner',
-          university: 'BYU',
+          university: 'Wasatch Front',
           badge: 'Road Captain',
           metric: '184 trips completed',
           icon: Icons.directions_car_filled,
@@ -39,8 +39,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         ),
         _LeaderboardEntry(
           name: 'Sofia Kim',
-          university: 'USU',
-          badge: 'Campus Connector',
+          university: 'Northern Utah',
+          badge: 'Route Connector',
           metric: '161 trips completed',
           icon: Icons.route,
           profilePhotoUrl:
@@ -53,7 +53,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       entries: [
         _LeaderboardEntry(
           name: 'Ethan Brooks',
-          university: 'ASU',
+          university: 'Southwest',
           badge: '5-Star Rider',
           metric: '4.98 avg rating',
           icon: Icons.star_rounded,
@@ -62,7 +62,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         ),
         _LeaderboardEntry(
           name: 'Mia Patel',
-          university: 'BYU-Idaho',
+          university: 'Mountain West',
           badge: 'Trust Favorite',
           metric: '4.96 avg rating',
           icon: Icons.workspace_premium,
@@ -76,7 +76,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       entries: [
         _LeaderboardEntry(
           name: 'Noah Lee',
-          university: 'University of Utah',
+          university: 'Salt Lake Region',
           badge: 'Green Commuter',
           metric: '428 kg CO2 saved',
           icon: Icons.eco,
@@ -85,7 +85,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         ),
         _LeaderboardEntry(
           name: 'Grace Allen',
-          university: 'USU',
+          university: 'High Country',
           badge: 'Planet Partner',
           metric: '401 kg CO2 saved',
           icon: Icons.nature_people,
@@ -99,8 +99,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       entries: [
         _LeaderboardEntry(
           name: 'Liam Carter',
-          university: 'BYU',
-          badge: 'Game Day Hero',
+          university: 'Utah County',
+          badge: 'Event Run Hero',
           metric: '67 event carpools',
           icon: Icons.celebration,
           profilePhotoUrl:
@@ -108,8 +108,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         ),
         _LeaderboardEntry(
           name: 'Ella Wright',
-          university: 'ASU',
-          badge: 'Campus Events Pro',
+          university: 'Arizona Metro',
+          badge: 'Events Pro',
           metric: '59 event carpools',
           icon: Icons.event_available,
           profilePhotoUrl:
@@ -229,7 +229,7 @@ class _LeaderboardTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('University: ${entry.university}'),
+              Text('Home base: ${entry.university}'),
               Text('Badge: ${entry.badge}'),
               Text('Metric: ${entry.metric}'),
             ],

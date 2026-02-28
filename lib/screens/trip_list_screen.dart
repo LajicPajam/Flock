@@ -450,8 +450,6 @@ class _TripListScreenState extends State<TripListScreen> {
             ? ListView(
                 padding: const EdgeInsets.only(bottom: 24),
                 children: [
-                  const _AvailableTripsHero(),
-                  const SizedBox(height: 24),
                   const Center(
                     child: Text('No trips yet. Create the first one.'),
                   ),
@@ -461,8 +459,6 @@ class _TripListScreenState extends State<TripListScreen> {
             : ListView(
                 padding: const EdgeInsets.only(bottom: 24),
                 children: [
-                  const _AvailableTripsHero(),
-                  const SizedBox(height: 24),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -617,11 +613,28 @@ class _TripCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      trip.driverName,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          trip.driverName,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (trip.driverIsStudentVerified)
+                          Text(
+                            trip.driverVerifiedSchoolName == null ||
+                                    trip.driverVerifiedSchoolName!.isEmpty
+                                ? 'Verified student'
+                                : 'Verified student • ${trip.driverVerifiedSchoolName}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.primaryGreen,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   TierBadge(carbonSavedGrams: trip.driverCarbonSavedGrams),
@@ -629,15 +642,32 @@ class _TripCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              Text(
-                trip.driverReviewCount == 0
-                    ? 'Fresh driver profile'
-                    : 'Rated ${trip.driverAverageRating.toStringAsFixed(1)} • ${trip.driverReviewCount} reviews',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textInk.withValues(alpha: 0.66),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              trip.driverReviewCount == 0
+                  ? Text(
+                      'Fresh driver profile',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textInk.withValues(alpha: 0.66),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    )
+                  : Row(
+                      children: [
+                        _TripCardRatingStars(rating: trip.driverAverageRating),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${trip.driverReviewCount} review${trip.driverReviewCount == 1 ? '' : 's'}',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: AppColors.textInk.withValues(
+                                    alpha: 0.66,
+                                  ),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
               const SizedBox(height: 12),
               Wrap(
                 runSpacing: 8,
@@ -753,6 +783,28 @@ class _TripDriverAvatar extends StatelessWidget {
                 );
               },
             ),
+    );
+  }
+}
+
+class _TripCardRatingStars extends StatelessWidget {
+  const _TripCardRatingStars({required this.rating});
+
+  final double rating;
+
+  @override
+  Widget build(BuildContext context) {
+    final filledStars = rating.round().clamp(0, 5);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return Icon(
+          index < filledStars ? Icons.star_rounded : Icons.star_border_rounded,
+          size: 16,
+          color: const Color(0xFFE0A106),
+        );
+      }),
     );
   }
 }
@@ -1333,115 +1385,6 @@ class _StatusChip extends StatelessWidget {
         status.toUpperCase(),
         style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700),
       ),
-    );
-  }
-}
-
-class _AvailableTripsHero extends StatelessWidget {
-  const _AvailableTripsHero();
-
-  @override
-  Widget build(BuildContext context) {
-    const tagline =
-        'Carpool to thousands of destinations at low prices';
-    const heroHeight = 200.0;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // #region agent log
-        final useRow = constraints.maxWidth >= 500;
-        debugLog(
-          location: 'trip_list_screen.dart:_AvailableTripsHero',
-          message: 'Hero constraints',
-          data: {
-            'maxWidth': constraints.maxWidth,
-            'maxHeightInfinite': constraints.maxHeight.isInfinite,
-            'useRow': useRow,
-          },
-          hypothesisId: 'H2',
-        );
-        // #endregion
-        return SizedBox(
-          height: heroHeight,
-          child: useRow
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 24, 24, 24),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            tagline,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primaryGreen,
-                                  height: 1.2,
-                                ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.asset(
-                            'assets/carpool_hero.png',
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 24, 0, 12),
-                      child: Text(
-                        tagline,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryGreen,
-                              height: 1.2,
-                            ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 120,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.asset(
-                            'assets/carpool_hero.png',
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-        );
-      },
     );
   }
 }

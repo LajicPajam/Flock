@@ -100,17 +100,26 @@ class UiShell extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         centerTitle: true,
         leading: canPop
-            ? null
+            ? IconButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                tooltip: 'Back',
+              )
             : Padding(
                 padding: const EdgeInsets.only(left: 12),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: Image.asset('assets/flock_icon.png', height: 28),
+                  child: const ImageIcon(
+                    AssetImage('assets/flock_icon.png'),
+                    size: 30,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-        leadingWidth: canPop ? null : 58,
+        leadingWidth: 58,
         title: Text(
           title,
           maxLines: 1,

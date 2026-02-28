@@ -252,7 +252,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             children: [
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -288,7 +288,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
+                      const Divider(height: 24),
                       _TripDetailValueRow(
                         label: 'Departure',
                         value: formatDepartureTime(trip.departureTime),
@@ -307,18 +308,18 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         value: _etaLabelValue(estimatedArrival, trip.status),
                       ),
                       if (!isDriver && trip.driverReviewCount > 0)
-                        _TripDetailValueRow(
+                        _TripDetailRatingRow(
                           label: 'Driver rating',
-                          value:
-                              '${trip.driverAverageRating.toStringAsFixed(1)} (${trip.driverReviewCount} reviews)',
+                          rating: trip.driverAverageRating,
+                          reviewCount: trip.driverReviewCount,
                         ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       _TripRouteMap(
                         originPoint: originPoint,
                         destinationPoint: destinationPoint,
                       ),
                       if (isDriver) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -351,21 +352,22 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         ),
                       ],
                       if (trip.meetingSpot.isNotEmpty) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 14),
                         Text('Meeting spot: ${trip.meetingSpot}'),
                       ],
                       if (trip.notes.isNotEmpty) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Text('Notes: ${trip.notes}'),
                       ],
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       _TripTimelineCard(
                         origin: origin,
                         destination: destination,
                         departureTime: trip.departureTime.toLocal(),
                         arrivalTime: estimatedArrival.toLocal(),
                       ),
-                      const Divider(height: 24),
+                      const SizedBox(height: 16),
+                      const Divider(height: 28),
                       Row(
                         children: [
                           CircleAvatar(
@@ -395,6 +397,18 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                 Text(
                                   'Phone: ${formatPhoneNumber(trip.driverPhoneNumber)}',
                                 ),
+                                if (trip.driverIsStudentVerified)
+                                  Text(
+                                    trip.driverVerifiedSchoolName == null ||
+                                            trip.driverVerifiedSchoolName!.isEmpty
+                                        ? 'Verified student'
+                                        : 'Verified student • ${trip.driverVerifiedSchoolName}',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: AppColors.primaryGreen,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
                               ],
                             ),
                           ),
@@ -415,7 +429,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         ],
                       ),
                       if (canViewCarInfo) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         Text(
                           'Car: ${trip.driverCarColor} ${trip.driverCarMake} ${trip.driverCarModel}'
                               .trim(),
@@ -429,7 +443,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                           Text('Vehicle notes: ${trip.driverCarDescription}'),
                         ],
                       ] else if (!isDriver) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         const Text(
                           'Vehicle details unlock after your ride request is accepted.',
                         ),
@@ -665,12 +679,12 @@ class _TripDetailValueRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+    final baseStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
       color: AppColors.textInk,
     );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
+      padding: const EdgeInsets.only(bottom: 6),
       child: RichText(
         text: TextSpan(
           style: baseStyle,
@@ -686,6 +700,72 @@ class _TripDetailValueRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TripDetailRatingRow extends StatelessWidget {
+  const _TripDetailRatingRow({
+    required this.label,
+    required this.rating,
+    required this.reviewCount,
+  });
+
+  final String label;
+  final double rating;
+  final int reviewCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      color: AppColors.textInk,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            '$label: ',
+            style: textStyle?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          _RatingStars(rating: rating, size: 17),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$reviewCount review${reviewCount == 1 ? '' : 's'}',
+              style: textStyle,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RatingStars extends StatelessWidget {
+  const _RatingStars({
+    required this.rating,
+    this.size = 18,
+  });
+
+  final double rating;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final filledStars = rating.round().clamp(0, 5);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return Icon(
+          index < filledStars ? Icons.star_rounded : Icons.star_border_rounded,
+          size: size,
+          color: const Color(0xFFE0A106),
+        );
+      }),
     );
   }
 }
@@ -710,7 +790,7 @@ class _TripDetailStatusRow extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: 2, bottom: 4),
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
       child: Row(
         children: [
           const Text(

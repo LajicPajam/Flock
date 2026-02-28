@@ -2,6 +2,8 @@ const {
   findUserById,
   updateDriverProfile,
   updateUserProfile,
+  beginStudentVerification,
+  completeStudentVerification,
 } = require('../models/users');
 const { listTripsForDriver } = require('../models/trips');
 const {
@@ -24,6 +26,12 @@ function sanitizeUser(user) {
     academic_year: user.academic_year,
     vibe: user.vibe,
     favorite_playlist: user.favorite_playlist,
+    student_email: user.student_email,
+    pending_student_email: user.pending_student_email,
+    is_student_verified: user.is_student_verified,
+    verified_school_name: user.verified_school_name,
+    student_verified_at: user.student_verified_at,
+    student_verification_expires_at: user.student_verification_expires_at,
     is_driver: user.is_driver,
     car_make: user.car_make,
     car_model: user.car_model,
@@ -33,6 +41,32 @@ function sanitizeUser(user) {
     car_description: user.car_description,
     created_at: user.created_at,
   };
+}
+
+const EDU_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.edu$/i;
+const VERIFICATION_WINDOW_MS = 10 * 60 * 1000;
+
+function isEduEmail(value) {
+  return EDU_EMAIL_REGEX.test(value);
+}
+
+function deriveSchoolName(email) {
+  const domain = email.toLowerCase().split('@')[1] || '';
+  const parts = domain.split('.').filter(Boolean);
+  const eduIndex = parts.lastIndexOf('edu');
+  const base = eduIndex > 0 ? parts[eduIndex - 1] : parts[0] || 'Student';
+
+  return base
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((part) => {
+      if (/^[a-z]+$/i.test(part) && part.length <= 4) {
+        return part.toUpperCase();
+      }
+
+      return part[0].toUpperCase() + part.slice(1);
+    })
+    .join(' ');
 }
 
 async function getCurrentUserHandler(req, res) {
@@ -145,6 +179,106 @@ async function updateCurrentUserHandler(req, res) {
   }
 }
 
+async function startStudentVerificationHandler(req, res) {
+  const rawStudentEmail = String(req.body.studentEmail || '').trim().toLowerCase();
+
+  if (!rawStudentEmail) {
+    return res.status(400).json({ error: 'A .edu email is required.' });
+  }
+
+  if (!isEduEmail(rawStudentEmail)) {
+    return res.status(400).json({
+      error: 'Use a valid .edu email to verify your student status.',
+    });
+  }
+
+  try {
+    const currentUser = await findUserById(req.user.id);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (
+      currentUser.is_student_verified &&
+      currentUser.student_email &&
+      currentUser.student_email.toLowerCase() === rawStudentEmail
+    ) {
+      return res.json({
+        user: sanitizeUser(currentUser),
+        message: 'That school email is already verified.',
+      });
+    }
+
+    const verificationCode = String(
+      Math.floor(100000 + Math.random() * 900000),
+    );
+    const expiresAt = new Date(Date.now() + VERIFICATION_WINDOW_MS);
+
+    const updatedUser = await beginStudentVerification({
+      userId: req.user.id,
+      studentEmail: rawStudentEmail,
+      verificationCode,
+      expiresAt,
+    });
+
+    return res.json({
+      user: sanitizeUser(updatedUser),
+      message:
+        'Verification code generated. In local development, use the code shown in the app.',
+      dev_verification_code: verificationCode,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to start student verification.' });
+  }
+}
+
+async function confirmStudentVerificationHandler(req, res) {
+  const code = String(req.body.code || '').trim();
+
+  if (!code) {
+    return res.status(400).json({ error: 'Enter the verification code.' });
+  }
+
+  try {
+    const currentUser = await findUserById(req.user.id);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (!currentUser.pending_student_email || !currentUser.student_verification_code) {
+      return res.status(400).json({
+        error: 'Request a verification code before confirming.',
+      });
+    }
+
+    if (currentUser.student_verification_code !== code) {
+      return res.status(400).json({ error: 'That verification code is incorrect.' });
+    }
+
+    if (
+      !currentUser.student_verification_expires_at ||
+      new Date(currentUser.student_verification_expires_at).getTime() < Date.now()
+    ) {
+      return res.status(400).json({
+        error: 'That verification code expired. Request a new one.',
+      });
+    }
+
+    const updatedUser = await completeStudentVerification({
+      userId: req.user.id,
+      studentEmail: currentUser.pending_student_email,
+      verifiedSchoolName: deriveSchoolName(currentUser.pending_student_email),
+    });
+
+    return res.json({
+      user: sanitizeUser(updatedUser),
+      message: 'Student email verified.',
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to verify your student email.' });
+  }
+}
+
 async function getMyTripsHandler(req, res) {
   try {
     const trips = await listTripsForDriver(req.user.id);
@@ -209,4 +343,6 @@ module.exports = {
   getNotificationsHandler,
   markAllNotificationsReadHandler,
   markNotificationReadHandler,
+  startStudentVerificationHandler,
+  confirmStudentVerificationHandler,
 };

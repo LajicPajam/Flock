@@ -20,6 +20,18 @@ class ApiResult {
   final AuthUser user;
 }
 
+class StudentVerificationResult {
+  StudentVerificationResult({
+    required this.user,
+    this.message,
+    this.devVerificationCode,
+  });
+
+  final AuthUser user;
+  final String? message;
+  final String? devVerificationCode;
+}
+
 class MessagesResult {
   MessagesResult({
     required this.messages,
@@ -369,6 +381,41 @@ class ApiService {
 
     final data = _decode(response) as Map<String, dynamic>;
     return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
+  }
+
+  Future<StudentVerificationResult> startStudentVerification({
+    required String token,
+    required String studentEmail,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/users/me/student-verification/start'),
+      headers: _headers(token),
+      body: jsonEncode({'studentEmail': studentEmail}),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    return StudentVerificationResult(
+      user: AuthUser.fromJson(data['user'] as Map<String, dynamic>),
+      message: data['message'] as String?,
+      devVerificationCode: data['dev_verification_code'] as String?,
+    );
+  }
+
+  Future<StudentVerificationResult> confirmStudentVerification({
+    required String token,
+    required String code,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/users/me/student-verification/confirm'),
+      headers: _headers(token),
+      body: jsonEncode({'code': code}),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    return StudentVerificationResult(
+      user: AuthUser.fromJson(data['user'] as Map<String, dynamic>),
+      message: data['message'] as String?,
+    );
   }
 
   Future<void> requestSeat({

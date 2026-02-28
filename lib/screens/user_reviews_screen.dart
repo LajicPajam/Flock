@@ -46,9 +46,13 @@ class UserReviewsScreen extends StatelessWidget {
                       Text(
                         data.reviewCount == 0
                             ? 'No reviews yet'
-                            : '${data.averageRating.toStringAsFixed(1)} / 5 from ${data.reviewCount} review${data.reviewCount == 1 ? '' : 's'}',
+                            : '${data.averageRating.toStringAsFixed(1)} / 5 stars from ${data.reviewCount} review${data.reviewCount == 1 ? '' : 's'}',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
+                      if (data.reviewCount > 0) ...[
+                        const SizedBox(height: 8),
+                        _StarRow(rating: data.averageRating),
+                      ],
                     ],
                   ),
                 ),
@@ -66,11 +70,17 @@ class UserReviewsScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '${review.rating} / 5',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Row(
+                              children: [
+                                _StarRow(rating: review.rating.toDouble()),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${review.rating} / 5',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
                             Text('From: ${review.reviewerName}'),
                             if (review.comment.isNotEmpty) ...[
@@ -87,6 +97,27 @@ class UserReviewsScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _StarRow extends StatelessWidget {
+  const _StarRow({required this.rating});
+
+  final double rating;
+
+  @override
+  Widget build(BuildContext context) {
+    final filledStars = rating.round().clamp(0, 5);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return Icon(
+          index < filledStars ? Icons.star_rounded : Icons.star_border_rounded,
+          size: 18,
+          color: const Color(0xFFE0A106),
+        );
+      }),
     );
   }
 }

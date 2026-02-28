@@ -9,6 +9,8 @@ const {
   getNotificationsHandler,
   markAllNotificationsReadHandler,
   markNotificationReadHandler,
+  startStudentVerificationHandler,
+  confirmStudentVerificationHandler,
 } = require('../controllers/userController');
 const {
   getCarbonStatsHandler,
@@ -25,6 +27,8 @@ router.get('/me/requests', authRequired, getMyRequestsHandler);
 router.get('/me/notifications', authRequired, getNotificationsHandler);
 router.post('/me/notifications/read-all', authRequired, markAllNotificationsReadHandler);
 router.post('/me/notifications/:id/read', authRequired, markNotificationReadHandler);
+router.post('/me/student-verification/start', authRequired, startStudentVerificationHandler);
+router.post('/me/student-verification/confirm', authRequired, confirmStudentVerificationHandler);
 router.put('/me', authRequired, updateCurrentUserHandler);
 router.post('/me/driver-profile', authRequired, updateDriverProfileHandler);
 router.get('/me/carbon-stats', authRequired, getCarbonStatsHandler);

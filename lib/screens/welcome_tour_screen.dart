@@ -71,7 +71,7 @@ class WelcomeTourScreen extends StatelessWidget {
                         icon: Icons.route_rounded,
                         title: 'Search by route first',
                         body:
-                            'Pick where you are and where you want to go. Flock is built around common student routes, not open-ended ride hailing.',
+                            'Pick where you are and where you want to go. Flock works well for student travel like away games, airport runs, and rides home, but it can help with any shared route.',
                       ),
                       SizedBox(height: 14),
                       _TourCard(
@@ -79,7 +79,7 @@ class WelcomeTourScreen extends StatelessWidget {
                         icon: Icons.hail_rounded,
                         title: 'Request a seat politely',
                         body:
-                            'Send a short note with your ride request so the driver knows who you are and what to expect.',
+                            'Send a short note with your ride request so the driver knows who you are, what school or event you are headed to, and what to expect.',
                       ),
                       SizedBox(height: 14),
                       _TourCard(

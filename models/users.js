@@ -1,5 +1,30 @@
 const db = require('../db');
 
+const USER_RETURN_FIELDS = `id,
+       name,
+       email,
+       phone_number,
+       profile_photo_url,
+       major,
+       academic_year,
+       vibe,
+       favorite_playlist,
+       is_driver,
+       car_make,
+       car_model,
+       car_color,
+       car_plate_state,
+       car_plate_number,
+       car_description,
+       student_email,
+       pending_student_email,
+       student_verification_code,
+       is_student_verified,
+       verified_school_name,
+       student_verified_at,
+       student_verification_expires_at,
+       created_at`;
+
 async function createUser({
   name,
   email,
@@ -38,24 +63,7 @@ async function createUser({
        car_description
      )
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-     RETURNING
-       id,
-       name,
-       email,
-       phone_number,
-       profile_photo_url,
-       major,
-       academic_year,
-       vibe,
-       favorite_playlist,
-       is_driver,
-       car_make,
-       car_model,
-       car_color,
-       car_plate_state,
-       car_plate_number,
-       car_description,
-       created_at`,
+     RETURNING ${USER_RETURN_FIELDS}`,
     [
       name,
       email.toLowerCase(),
@@ -82,24 +90,8 @@ async function createUser({
 async function findUserByEmail(email) {
   const result = await db.query(
     `SELECT
-       id,
-       name,
-       email,
-       password_hash,
-       phone_number,
-       profile_photo_url,
-       major,
-       academic_year,
-       vibe,
-       favorite_playlist,
-       is_driver,
-       car_make,
-       car_model,
-       car_color,
-       car_plate_state,
-       car_plate_number,
-       car_description,
-       created_at
+       ${USER_RETURN_FIELDS},
+       password_hash
      FROM users
      WHERE email = $1`,
     [email.toLowerCase()],
@@ -111,23 +103,7 @@ async function findUserByEmail(email) {
 async function findUserById(id) {
   const result = await db.query(
     `SELECT
-       id,
-       name,
-       email,
-       phone_number,
-       profile_photo_url,
-       major,
-       academic_year,
-       vibe,
-       favorite_playlist,
-       is_driver,
-       car_make,
-       car_model,
-       car_color,
-       car_plate_state,
-       car_plate_number,
-       car_description,
-       created_at
+       ${USER_RETURN_FIELDS}
      FROM users
      WHERE id = $1`,
     [id],
@@ -156,24 +132,7 @@ async function updateDriverProfile({
        car_plate_number = $6,
        car_description = $7
      WHERE id = $1
-     RETURNING
-       id,
-       name,
-       email,
-       phone_number,
-       profile_photo_url,
-       major,
-       academic_year,
-       vibe,
-       favorite_playlist,
-       is_driver,
-       car_make,
-       car_model,
-       car_color,
-       car_plate_state,
-       car_plate_number,
-       car_description,
-       created_at`,
+     RETURNING ${USER_RETURN_FIELDS}`,
     [
       userId,
       carMake,
@@ -226,24 +185,7 @@ async function updateUserProfile({
          ELSE FALSE
        END
      WHERE id = $1
-     RETURNING
-       id,
-       name,
-       email,
-       phone_number,
-       profile_photo_url,
-       major,
-       academic_year,
-       vibe,
-       favorite_playlist,
-       is_driver,
-       car_make,
-       car_model,
-       car_color,
-       car_plate_state,
-       car_plate_number,
-       car_description,
-       created_at`,
+     RETURNING ${USER_RETURN_FIELDS}`,
     [
       userId,
       name,
@@ -265,10 +207,55 @@ async function updateUserProfile({
   return result.rows[0] || null;
 }
 
+async function beginStudentVerification({
+  userId,
+  studentEmail,
+  verificationCode,
+  expiresAt,
+}) {
+  const result = await db.query(
+    `UPDATE users
+     SET
+       pending_student_email = $2,
+       student_verification_code = $3,
+       student_verification_expires_at = $4
+     WHERE id = $1
+     RETURNING ${USER_RETURN_FIELDS}`,
+    [userId, studentEmail, verificationCode, expiresAt],
+  );
+
+  return result.rows[0] || null;
+}
+
+async function completeStudentVerification({
+  userId,
+  studentEmail,
+  verifiedSchoolName,
+}) {
+  const result = await db.query(
+    `UPDATE users
+     SET
+       student_email = $2,
+       pending_student_email = NULL,
+       student_verification_code = NULL,
+       student_verification_expires_at = NULL,
+       is_student_verified = TRUE,
+       verified_school_name = $3,
+       student_verified_at = NOW()
+     WHERE id = $1
+     RETURNING ${USER_RETURN_FIELDS}`,
+    [userId, studentEmail, verifiedSchoolName],
+  );
+
+  return result.rows[0] || null;
+}
+
 module.exports = {
   createUser,
   findUserByEmail,
   findUserById,
   updateDriverProfile,
   updateUserProfile,
+  beginStudentVerification,
+  completeStudentVerification,
 };

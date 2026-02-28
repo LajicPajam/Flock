@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/auth_user.dart';
 import '../models/carbon_stats.dart';
 import '../state/app_state.dart';
+import '../theme/app_colors.dart';
 import '../utils/phone_formatter.dart';
 import '../widgets/carbon_progress_bar.dart';
 import 'user_reviews_screen.dart';
@@ -22,6 +23,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _studentEmailController = TextEditingController();
+  final _verificationCodeController = TextEditingController();
   final _majorController = TextEditingController();
   final _academicYearController = TextEditingController();
   final _vibeController = TextEditingController();
@@ -38,6 +41,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _photoName;
   String? _profilePhotoUrl;
   bool _saving = false;
+  bool _sendingStudentCode = false;
+  bool _confirmingStudentCode = false;
+  String? _devVerificationCode;
 
   @override
   void initState() {
@@ -54,6 +60,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _studentEmailController.dispose();
+    _verificationCodeController.dispose();
     _majorController.dispose();
     _academicYearController.dispose();
     _vibeController.dispose();
@@ -75,6 +83,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _vibeController.text = user.vibe ?? '';
     _favoritePlaylistController.text = user.favoritePlaylist ?? '';
     _phoneController.text = formatPhoneNumber(user.phoneNumber);
+    _studentEmailController.text =
+        user.pendingStudentEmail ??
+        user.studentEmail ??
+        (user.email.toLowerCase().endsWith('.edu') ? user.email : '');
     _carMakeController.text = user.carMake ?? '';
     _carModelController.text = user.carModel ?? '';
     _carColorController.text = user.carColor ?? '';
@@ -82,6 +94,106 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _carPlateNumberController.text = user.carPlateNumber ?? '';
     _carDescriptionController.text = user.carDescription ?? '';
     _profilePhotoUrl = user.profilePhotoUrl;
+  }
+
+  Future<void> _startStudentVerification() async {
+    final studentEmail = _studentEmailController.text.trim().toLowerCase();
+    if (studentEmail.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a .edu school email first.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _sendingStudentCode = true;
+    });
+
+    try {
+      final result = await context.read<AppState>().startStudentVerification(
+        studentEmail: studentEmail,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _devVerificationCode = result.devVerificationCode;
+        if (result.devVerificationCode != null) {
+          _verificationCodeController.text = result.devVerificationCode!;
+        }
+      });
+
+      final message = result.message ?? 'Verification code sent.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _sendingStudentCode = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _confirmStudentVerification() async {
+    final code = _verificationCodeController.text.trim();
+    if (code.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter the verification code first.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _confirmingStudentCode = true;
+    });
+
+    try {
+      final result = await context.read<AppState>().confirmStudentVerification(
+        code: code,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _devVerificationCode = null;
+        _verificationCodeController.clear();
+      });
+      _populate(result.user);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message ?? 'Student email verified.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _confirmingStudentCode = false;
+        });
+      }
+    }
   }
 
   Future<void> _pickPhoto() async {
@@ -303,6 +415,114 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         border: OutlineInputBorder(),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Student Verification',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      user.isStudentVerified
+                          ? 'Verified student status helps drivers and riders trust who they are coordinating with.'
+                          : 'Use any login email you want, then verify a .edu address to earn a student badge tied to your school.',
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: user.isStudentVerified
+                            ? AppColors.secondaryGreen
+                            : AppColors.canvasBackground,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.subtleBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            user.isStudentVerified
+                                ? Icons.verified_rounded
+                                : Icons.school_outlined,
+                            color: AppColors.primaryGreen,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              user.isStudentVerified
+                                  ? 'Verified student${user.verifiedSchoolName == null || user.verifiedSchoolName!.isEmpty ? '' : ' • ${user.verifiedSchoolName}'}'
+                                  : (user.pendingStudentEmail != null &&
+                                            user.pendingStudentEmail!.isNotEmpty)
+                                        ? 'Verification pending for ${user.pendingStudentEmail}'
+                                        : 'No school email verified yet',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    fontWeight: user.isStudentVerified
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _studentEmailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'School Email (.edu)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: _saving || _sendingStudentCode || _confirmingStudentCode
+                            ? null
+                            : _startStudentVerification,
+                        child: Text(
+                          (user.pendingStudentEmail != null &&
+                                  user.pendingStudentEmail!.isNotEmpty)
+                              ? 'Resend Verification Code'
+                              : 'Send Verification Code',
+                        ),
+                      ),
+                    ),
+                    if ((user.pendingStudentEmail != null &&
+                            user.pendingStudentEmail!.isNotEmpty) ||
+                        _devVerificationCode != null) ...[
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _verificationCodeController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Verification Code',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      if (_devVerificationCode != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Local demo code: $_devVerificationCode',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.primaryGreen,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.tonal(
+                          onPressed:
+                              _saving || _sendingStudentCode || _confirmingStudentCode
+                              ? null
+                              : _confirmStudentVerification,
+                          child: const Text('Verify Student Email'),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     _buildField(
                       controller: _phoneController,

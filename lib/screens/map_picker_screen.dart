@@ -32,8 +32,6 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   bool _resolvingLabel = false;
   int _selectionToken = 0;
 
-  static const _supportedRadiusKm = 50.0;
-
   @override
   void initState() {
     super.initState();
@@ -51,57 +49,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   }
 
   void _selectPoint(LatLng point) {
-    final nearestSupported = CollegeCity.nearestSupportedTo(
-      point.latitude,
-      point.longitude,
-    );
-    final distanceToSupported = CollegeCity.distanceKmBetween(
-      point.latitude,
-      point.longitude,
-      nearestSupported.latitude,
-      nearestSupported.longitude,
-    );
-
-    if (distanceToSupported > _supportedRadiusKm) {
-      _showUnsupportedCityDialog(point, nearestSupported, distanceToSupported);
-      return;
-    }
-
     _applySelection(point);
-  }
-
-  void _showUnsupportedCityDialog(
-    LatLng tappedPoint,
-    CollegeCity nearestSupported,
-    double distanceKm,
-  ) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Area not supported'),
-        content: Text(
-          'Flock only supports trips between college towns. The nearest supported city is ${nearestSupported.label} (about ${distanceKm.toStringAsFixed(0)} km away). Would you like to place the pin there instead?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              final point = LatLng(
-                nearestSupported.latitude,
-                nearestSupported.longitude,
-              );
-              _applySelection(point);
-              _mapController.move(point, 10);
-            },
-            child: Text('Use ${nearestSupported.label}'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _applySelection(LatLng point) {
@@ -213,7 +161,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       child: ListView(
         children: [
           Text(
-            'Tap anywhere on the map, or choose a supported city below.',
+            'Tap anywhere on the map, or use a quick city jump below.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textInk.withValues(alpha: 0.72),
             ),
@@ -300,7 +248,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                       ? 'Looking up the local area for this pin...'
                       : distanceKm < 1
                       ? 'This pin is inside ${_previewSelection.city.label}.'
-                      : 'Nearest supported region is ${_previewSelection.city.label}, about ${distanceKm.toStringAsFixed(1)} km away.',
+                      : 'Nearest major city is ${_previewSelection.city.label}, about ${distanceKm.toStringAsFixed(1)} km away.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textInk.withValues(alpha: 0.72),
                   ),

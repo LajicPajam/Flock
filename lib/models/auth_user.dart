@@ -9,6 +9,12 @@ class AuthUser {
     this.academicYear,
     this.vibe,
     this.favoritePlaylist,
+    this.studentEmail,
+    this.pendingStudentEmail,
+    required this.isStudentVerified,
+    this.verifiedSchoolName,
+    this.studentVerifiedAt,
+    this.studentVerificationExpiresAt,
     required this.isDriver,
     this.carMake,
     this.carModel,
@@ -27,6 +33,12 @@ class AuthUser {
   final String? academicYear;
   final String? vibe;
   final String? favoritePlaylist;
+  final String? studentEmail;
+  final String? pendingStudentEmail;
+  final bool isStudentVerified;
+  final String? verifiedSchoolName;
+  final DateTime? studentVerifiedAt;
+  final DateTime? studentVerificationExpiresAt;
   final bool isDriver;
   final String? carMake;
   final String? carModel;
@@ -46,6 +58,19 @@ class AuthUser {
       academicYear: json['academic_year'] as String?,
       vibe: json['vibe'] as String?,
       favoritePlaylist: json['favorite_playlist'] as String?,
+      studentEmail: json['student_email'] as String?,
+      pendingStudentEmail: json['pending_student_email'] as String?,
+      isStudentVerified: json['is_student_verified'] as bool? ?? false,
+      verifiedSchoolName: json['verified_school_name'] as String?,
+      studentVerifiedAt: json['student_verified_at'] == null
+          ? null
+          : DateTime.tryParse(json['student_verified_at'] as String),
+      studentVerificationExpiresAt:
+          json['student_verification_expires_at'] == null
+          ? null
+          : DateTime.tryParse(
+              json['student_verification_expires_at'] as String,
+            ),
       isDriver: json['is_driver'] as bool? ?? false,
       carMake: json['car_make'] as String?,
       carModel: json['car_model'] as String?,
@@ -67,6 +92,13 @@ class AuthUser {
       'academic_year': academicYear,
       'vibe': vibe,
       'favorite_playlist': favoritePlaylist,
+      'student_email': studentEmail,
+      'pending_student_email': pendingStudentEmail,
+      'is_student_verified': isStudentVerified,
+      'verified_school_name': verifiedSchoolName,
+      'student_verified_at': studentVerifiedAt?.toIso8601String(),
+      'student_verification_expires_at':
+          studentVerificationExpiresAt?.toIso8601String(),
       'is_driver': isDriver,
       'car_make': carMake,
       'car_model': carModel,

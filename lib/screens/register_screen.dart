@@ -220,6 +220,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ? 'Enter your email.'
                           : null,
                     ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Use any email to sign up. You can verify a .edu school email later in your profile for a student badge.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.black54,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _passwordController,
