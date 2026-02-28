@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16
+    container_name: flock-db
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: flock_carpool
+    ports:
+      - "55432:5432"
+    volumes:
+      - flock_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flock_carpool"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flock-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres@db:5432/flock_carpool
+      JWT_SECRET: replace_me_for_local_dev
+    ports:
+      - "3000:3000"
+
+volumes:
+  flock_pg_data:

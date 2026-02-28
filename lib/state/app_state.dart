@@ -1,0 +1,175 @@
+import 'package:flutter/material.dart';
+
+import '../models/auth_user.dart';
+import '../models/trip.dart';
+import '../services/api.dart';
+
+class AppState extends ChangeNotifier {
+  AppState({ApiService? apiService}) : _api = apiService ?? ApiService();
+
+  final ApiService _api;
+
+  String? _token;
+  AuthUser? _currentUser;
+  List<Trip> _trips = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  bool get isAuthenticated => _token != null;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  AuthUser? get currentUser => _currentUser;
+  String? get token => _token;
+  List<Trip> get trips => _trips;
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  Future<bool> register({
+    required String name,
+    required String email,
+    required String password,
+    required String phoneNumber,
+    required String profilePhotoUrl,
+  }) async {
+    return _runBusy(() async {
+      final result = await _api.register(
+        name: name,
+        email: email,
+        password: password,
+        phoneNumber: phoneNumber,
+        profilePhotoUrl: profilePhotoUrl,
+      );
+      _token = result.token;
+      _currentUser = result.user;
+      await loadTrips();
+    });
+  }
+
+  Future<bool> login({
+    required String email,
+    required String password,
+  }) async {
+    return _runBusy(() async {
+      final result = await _api.login(
+        email: email,
+        password: password,
+      );
+      _token = result.token;
+      _currentUser = result.user;
+      await loadTrips();
+    });
+  }
+
+  Future<void> loadTrips() async {
+    final trips = await _api.fetchTrips(token: _token);
+    _trips = trips;
+    notifyListeners();
+  }
+
+  Future<Trip> loadTripDetail(int tripId) {
+    return _api.fetchTripDetail(tripId, token: _token);
+  }
+
+  Future<void> createTrip({
+    required String originCity,
+    required String destinationCity,
+    required DateTime departureTime,
+    required int seatsAvailable,
+    required String notes,
+  }) async {
+    await _api.createTrip(
+      token: _requireToken(),
+      originCity: originCity,
+      destinationCity: destinationCity,
+      departureTime: departureTime,
+      seatsAvailable: seatsAvailable,
+      notes: notes,
+    );
+    await loadTrips();
+  }
+
+  Future<void> requestSeat({
+    required int tripId,
+    required String message,
+  }) async {
+    await _api.requestSeat(
+      token: _requireToken(),
+      tripId: tripId,
+      message: message,
+    );
+  }
+
+  Future<void> acceptRequest(int requestId) async {
+    await _api.acceptRequest(
+      token: _requireToken(),
+      requestId: requestId,
+    );
+  }
+
+  Future<void> rejectRequest(int requestId) async {
+    await _api.rejectRequest(
+      token: _requireToken(),
+      requestId: requestId,
+    );
+  }
+
+  Future<MessagesResult> loadMessages({
+    required int tripId,
+    int? participantId,
+  }) {
+    return _api.fetchMessages(
+      token: _requireToken(),
+      tripId: tripId,
+      participantId: participantId,
+    );
+  }
+
+  Future<void> sendMessage({
+    required int tripId,
+    required String messageText,
+    int? receiverId,
+  }) {
+    return _api.sendMessage(
+      token: _requireToken(),
+      tripId: tripId,
+      messageText: messageText,
+      receiverId: receiverId,
+    );
+  }
+
+  void logout() {
+    _token = null;
+    _currentUser = null;
+    _trips = [];
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  String _requireToken() {
+    final token = _token;
+    if (token == null) {
+      throw Exception('Authentication required.');
+    }
+    return token;
+  }
+
+  Future<bool> _runBusy(Future<void> Function() action) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await action();
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+}
