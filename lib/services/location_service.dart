@@ -56,9 +56,14 @@ class LocationService {
   }
 
   Future<Position> resolveCurrentPosition() async {
-    final lastKnownPosition = await Geolocator.getLastKnownPosition();
-    if (lastKnownPosition != null) {
-      return lastKnownPosition;
+    // getLastKnownPosition is not supported on web; skip it and use getCurrentPosition.
+    try {
+      final lastKnownPosition = await Geolocator.getLastKnownPosition();
+      if (lastKnownPosition != null) {
+        return lastKnownPosition;
+      }
+    } on UnsupportedError {
+      // Web and some platforms don't support last-known position; fall through.
     }
 
     try {

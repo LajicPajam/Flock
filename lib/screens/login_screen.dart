@@ -5,6 +5,7 @@ import '../theme/app_colors.dart';
 import '../state/app_state.dart';
 import 'register_screen.dart';
 import 'settings_screen.dart';
+import 'ui_shell.dart';
 
 class _HeroSlogan extends StatelessWidget {
   const _HeroSlogan();
@@ -250,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             SliverToBoxAdapter(
-              child: _LandingFooter(),
+              child: const AppFooter(),
             ),
           ],
         ),
@@ -403,58 +404,3 @@ class _QuoteSection extends StatelessWidget {
   }
 }
 
-class _LandingFooter extends StatelessWidget {
-  const _LandingFooter();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(top: 40),
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-      decoration: BoxDecoration(
-        color: AppColors.primaryGreen.withValues(alpha: 0.08),
-      ),
-      child: Column(
-        children: [
-          Image.asset('assets/flock_logo.png', height: 48, fit: BoxFit.contain),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.facebook_rounded),
-                color: AppColors.primaryGreen,
-              ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.camera_alt_outlined),
-                color: AppColors.primaryGreen,
-              ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.alternate_email),
-                color: AppColors.primaryGreen,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '123 University Ave, Provo, UT 84601',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textInk.withValues(alpha: 0.7),
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '© 2025 Flock Carpool. All rights reserved.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textInk.withValues(alpha: 0.6),
-                  fontSize: 12,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
