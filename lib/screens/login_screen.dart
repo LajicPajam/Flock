@@ -143,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: const _HeroSlogan(),
                               ),
                               Expanded(
-                                child: _HeroImage(),
+                                child: const _HeroImage(),
                               ),
                             ],
                           ),
@@ -151,10 +151,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
             ),
-            SliverFillRemaining(
-              hasScrollBody: false,
+            SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                child: _WhyFlockSection(),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _QuoteSection(),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 480),
@@ -238,8 +249,211 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
+            SliverToBoxAdapter(
+              child: _LandingFooter(),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _WhyFlockSection extends StatelessWidget {
+  const _WhyFlockSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Why Flock?',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryGreen,
+              ),
+        ),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final useRow = constraints.maxWidth >= 600;
+            final items = [
+              _BenefitItem(
+                icon: Icons.savings_outlined,
+                title: 'Save money',
+                body: 'Split gas and tolls with fellow students instead of driving alone.',
+              ),
+              _BenefitItem(
+                icon: Icons.eco_outlined,
+                title: 'Reduce emissions',
+                body: 'Carpooling cuts CO₂ by ~110g per km. Track your impact.',
+              ),
+              _BenefitItem(
+                icon: Icons.groups_outlined,
+                title: 'Meet your flock',
+                body: 'Connect with students from BYU, USU, U of U, BYU-Idaho, and ASU.',
+              ),
+            ];
+            if (useRow) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (int i = 0; i < items.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 16),
+                    Expanded(child: items[i]),
+                  ],
+                ],
+              );
+            }
+            return Column(
+              children: items
+                  .map((e) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: e,
+                      ))
+                  .toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _BenefitItem extends StatelessWidget {
+  const _BenefitItem({
+    required this.icon,
+    required this.title,
+    required this.body,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryGreen,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 28, color: AppColors.primaryGreen),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textInk,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            body,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textInk.withValues(alpha: 0.72),
+                ),
+          ),
+        ],
+      );
+  }
+}
+
+class _QuoteSection extends StatelessWidget {
+  const _QuoteSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.secondaryGreen,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.subtleBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.format_quote, size: 32, color: AppColors.primaryGreen),
+          const SizedBox(height: 12),
+          Text(
+            'Perfect for holiday breaks and weekend trips. I carpool home with other students every month—saves gas, cuts emissions, and the ride goes faster with good company.',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: AppColors.textInk.withValues(alpha: 0.9),
+                ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '— Flock rider',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryGreen,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LandingFooter extends StatelessWidget {
+  const _LandingFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 40),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      decoration: BoxDecoration(
+        color: AppColors.primaryGreen.withValues(alpha: 0.08),
+      ),
+      child: Column(
+        children: [
+          Image.asset('assets/flock_logo.png', height: 48, fit: BoxFit.contain),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.facebook_rounded),
+                color: AppColors.primaryGreen,
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.camera_alt_outlined),
+                color: AppColors.primaryGreen,
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.alternate_email),
+                color: AppColors.primaryGreen,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '123 University Ave, Provo, UT 84601',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textInk.withValues(alpha: 0.7),
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '© 2025 Flock Carpool. All rights reserved.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textInk.withValues(alpha: 0.6),
+                  fontSize: 12,
+                ),
+          ),
+        ],
       ),
     );
   }
