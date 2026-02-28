@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/city.dart';
+import '../models/ride_request.dart';
 import '../models/trip.dart' show Trip, formatDepartureTime;
 import '../state/app_state.dart';
 import 'create_trip_screen.dart';
@@ -24,16 +27,27 @@ class TripDetailScreen extends StatefulWidget {
 class _TripDetailScreenState extends State<TripDetailScreen> {
   final _requestController = TextEditingController();
   late Future<Trip> _tripFuture;
+  late final Timer _clockTimer;
+  DateTime _now = DateTime.now();
   bool _submitting = false;
 
   @override
   void initState() {
     super.initState();
     _tripFuture = context.read<AppState>().loadTripDetail(widget.tripId);
+    _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _now = DateTime.now();
+      });
+    });
   }
 
   @override
   void dispose() {
+    _clockTimer.cancel();
     _requestController.dispose();
     super.dispose();
   }
@@ -223,6 +237,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
           final origin = CollegeCity.fromApiValue(trip.originCity);
           final destination = CollegeCity.fromApiValue(trip.destinationCity);
+          final estimatedArrival = _estimateArrival(trip);
 
           return ListView(
             children: [
@@ -238,8 +253,12 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text('Departure: ${formatDepartureTime(trip.departureTime)}'),
+                      Text(
+                        'Estimated arrival: ${formatDepartureTime(estimatedArrival)}',
+                      ),
                       Text('Seats available: ${trip.seatsAvailable}'),
                       Text('Status: ${trip.status.toUpperCase()}'),
+                      Text(_etaLabel(estimatedArrival, trip.status)),
                       if (!isDriver && trip.driverReviewCount > 0)
                         Text(
                           'Driver rating: ${trip.driverAverageRating.toStringAsFixed(1)} (${trip.driverReviewCount} reviews)',
@@ -285,6 +304,13 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         const SizedBox(height: 8),
                         Text('Notes: ${trip.notes}'),
                       ],
+                      const SizedBox(height: 12),
+                      _TripTimelineCard(
+                        origin: origin,
+                        destination: destination,
+                        departureTime: trip.departureTime.toLocal(),
+                        arrivalTime: estimatedArrival.toLocal(),
+                      ),
                       const Divider(height: 24),
                       Row(
                         children: [
@@ -457,12 +483,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      request.riderName ?? 'Rider',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                    _PassengerHoverName(request: request),
                                     Text(request.message),
                                     const SizedBox(height: 8),
                                     Wrap(
@@ -542,6 +563,258 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  DateTime _estimateArrival(Trip trip) {
+    final hours = _estimateRouteHours(trip.originCity, trip.destinationCity);
+    return trip.departureTime.toLocal().add(Duration(minutes: (hours * 60).round()));
+  }
+
+  String _etaLabel(DateTime estimatedArrival, String status) {
+    if (status == 'cancelled') {
+      return 'ETA unavailable: trip cancelled';
+    }
+    if (status == 'completed') {
+      return 'Arrived (trip completed)';
+    }
+
+    final diff = estimatedArrival.difference(_now);
+    if (diff.inMinutes >= 0) {
+      final hours = diff.inHours;
+      final minutes = diff.inMinutes % 60;
+      return 'ETA update: arrives in ${hours}h ${minutes}m';
+    }
+
+    final passed = _now.difference(estimatedArrival);
+    if (passed.inMinutes < 15) {
+      return 'ETA update: arriving now';
+    }
+    return 'ETA update: arrived ${passed.inHours}h ${passed.inMinutes % 60}m ago';
+  }
+}
+
+double _estimateRouteHours(String originApiValue, String destinationApiValue) {
+  const routeHours = <String, double>{
+    'provo_ut|logan_ut': 1.5,
+    'provo_ut|salt_lake_city_ut': 1.0,
+    'provo_ut|rexburg_id': 4.5,
+    'provo_ut|tempe_az': 10.0,
+    'logan_ut|salt_lake_city_ut': 1.5,
+    'logan_ut|rexburg_id': 4.0,
+    'logan_ut|tempe_az': 11.0,
+    'salt_lake_city_ut|rexburg_id': 3.5,
+    'salt_lake_city_ut|tempe_az': 10.0,
+    'rexburg_id|tempe_az': 14.0,
+  };
+
+  final direct = '$originApiValue|$destinationApiValue';
+  final reverse = '$destinationApiValue|$originApiValue';
+  return routeHours[direct] ?? routeHours[reverse] ?? 6.0;
+}
+
+String _shortCityLabel(CollegeCity city) {
+  return city.label.split(',').first.trim();
+}
+
+String _timelineTime(DateTime dt) {
+  final local = dt.toLocal();
+  final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  final minute = local.minute.toString().padLeft(2, '0');
+  final period = local.hour >= 12 ? 'PM' : 'AM';
+  return '$hour:$minute $period';
+}
+
+class _TripTimelineCard extends StatelessWidget {
+  const _TripTimelineCard({
+    required this.origin,
+    required this.destination,
+    required this.departureTime,
+    required this.arrivalTime,
+  });
+
+  final CollegeCity origin;
+  final CollegeCity destination;
+  final DateTime departureTime;
+  final DateTime arrivalTime;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = arrivalTime.difference(departureTime).inMinutes;
+    final firstStopTime = departureTime.add(
+      Duration(minutes: (total * 0.38).round()),
+    );
+    final secondStopTime = departureTime.add(
+      Duration(minutes: (total * 0.72).round()),
+    );
+
+    final stops = <_TimelineStop>[
+      _TimelineStop(
+        icon: Icons.place_outlined,
+        label: _shortCityLabel(origin),
+        subtitle: 'Departure',
+        time: departureTime,
+      ),
+      _TimelineStop(
+        icon: Icons.local_cafe_outlined,
+        label: 'Coffee Stop',
+        subtitle: 'Quick recharge',
+        time: firstStopTime,
+      ),
+      _TimelineStop(
+        icon: Icons.restaurant_outlined,
+        label: 'Meal Stop',
+        subtitle: 'Stretch and refuel',
+        time: secondStopTime,
+      ),
+      _TimelineStop(
+        icon: Icons.terrain_outlined,
+        label: _shortCityLabel(destination),
+        subtitle: 'Arrival',
+        time: arrivalTime,
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.subtleBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Trip Timeline',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          ...stops.asMap().entries.map((entry) {
+            final index = entry.key;
+            final stop = entry.value;
+            return _TimelineRow(
+              stop: stop,
+              isLast: index == stops.length - 1,
+            );
+          }),
+          const SizedBox(height: 6),
+          Text(
+            'Estimated arrival updates every minute.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineStop {
+  const _TimelineStop({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.time,
+  });
+
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final DateTime time;
+}
+
+class _TimelineRow extends StatelessWidget {
+  const _TimelineRow({required this.stop, required this.isLast});
+
+  final _TimelineStop stop;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 24,
+            child: Column(
+              children: [
+                Icon(stop.icon, size: 18),
+                if (!isLast)
+                  Container(
+                    width: 2,
+                    height: 24,
+                    margin: const EdgeInsets.only(top: 4),
+                    color: AppColors.subtleBorder,
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${stop.label} - ${_timelineTime(stop.time)}\n${stop.subtitle}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PassengerHoverName extends StatelessWidget {
+  const _PassengerHoverName({required this.request});
+
+  final RideRequest request;
+
+  String _valueOrFallback(String? value) {
+    final trimmed = value?.trim() ?? '';
+    return trimmed.isEmpty ? 'Not provided' : trimmed;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final riderName = request.riderName ?? 'Rider';
+    final ratingValue = request.riderAverageRating ?? 0;
+    final rating =
+        ratingValue > 0 ? ratingValue.toStringAsFixed(1) : 'No ratings yet';
+    final cardText = [
+      'Major: ${_valueOrFallback(request.riderMajor)}',
+      'Year: ${_valueOrFallback(request.riderAcademicYear)}',
+      'Vibe: ${_valueOrFallback(request.riderVibe)}',
+      'Rating: $rating',
+      'Favorite playlist: ${_valueOrFallback(request.riderFavoritePlaylist)}',
+    ].join('\n');
+
+    return Tooltip(
+      message: cardText,
+      waitDuration: const Duration(milliseconds: 180),
+      showDuration: const Duration(seconds: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      textStyle: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
+        height: 1.35,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            riderName,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 6),
+          Icon(
+            Icons.info_outline,
+            size: 16,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ],
       ),
     );
   }

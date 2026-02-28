@@ -205,9 +205,21 @@ async function listRideRequestsForTrip(tripId) {
        rr.created_at,
        u.name AS rider_name,
        u.phone_number AS rider_phone_number,
-       u.profile_photo_url AS rider_profile_photo_url
+       u.profile_photo_url AS rider_profile_photo_url,
+       u.major AS rider_major,
+       u.academic_year AS rider_academic_year,
+       u.vibe AS rider_vibe,
+       u.favorite_playlist AS rider_favorite_playlist,
+       COALESCE(rs.average_rating, 0) AS rider_average_rating
      FROM ride_requests rr
      JOIN users u ON u.id = rr.rider_id
+     LEFT JOIN (
+       SELECT
+         reviewee_id,
+         COALESCE(ROUND(AVG(rating)::numeric, 1), 0)::float AS average_rating
+       FROM reviews
+       GROUP BY reviewee_id
+     ) rs ON rs.reviewee_id = rr.rider_id
      WHERE rr.trip_id = $1
      ORDER BY rr.created_at ASC`,
     [tripId],

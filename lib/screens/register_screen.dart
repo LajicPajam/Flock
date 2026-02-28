@@ -21,6 +21,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _majorController = TextEditingController();
+  final _academicYearController = TextEditingController();
+  final _vibeController = TextEditingController();
+  final _favoritePlaylistController = TextEditingController();
   final ImagePicker _imagePicker = ImagePicker();
   Uint8List? _photoBytes;
   String? _photoName;
@@ -32,6 +36,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
+    _majorController.dispose();
+    _academicYearController.dispose();
+    _vibeController.dispose();
+    _favoritePlaylistController.dispose();
     super.dispose();
   }
 
@@ -99,6 +107,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: _passwordController.text,
       phoneNumber: _phoneController.text.trim(),
       profilePhotoUrl: profilePhotoUrl,
+      major: _majorController.text.trim().isEmpty
+          ? null
+          : _majorController.text.trim(),
+      academicYear: _academicYearController.text.trim().isEmpty
+          ? null
+          : _academicYearController.text.trim(),
+      vibe: _vibeController.text.trim().isEmpty
+          ? null
+          : _vibeController.text.trim(),
+      favoritePlaylist: _favoritePlaylistController.text.trim().isEmpty
+          ? null
+          : _favoritePlaylistController.text.trim(),
     );
 
     if (mounted) {
@@ -204,6 +224,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           value == null || value.trim().isEmpty
                           ? 'Enter your phone number.'
                           : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _majorController,
+                      decoration: const InputDecoration(
+                        labelText: 'Major (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _academicYearController,
+                      decoration: const InputDecoration(
+                        labelText: 'Year (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _vibeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Vibe (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _favoritePlaylistController,
+                      decoration: const InputDecoration(
+                        labelText: 'Favorite Playlist (optional)',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Align(
