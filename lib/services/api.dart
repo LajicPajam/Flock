@@ -599,9 +599,8 @@ class ApiService {
       decoded = jsonDecode(body);
     } on FormatException {
       throw Exception(
-        response.statusCode >= 400
-            ? 'The backend returned an unexpected response. Restart the backend so the latest routes are loaded.'
-            : 'Received an unexpected non-JSON response from the backend.',
+        'The server returned an invalid response. Please try again. '
+        'If the problem continues, ensure the backend is running and up to date.',
       );
     }
 

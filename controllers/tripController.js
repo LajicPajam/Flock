@@ -1,6 +1,6 @@
 const { getOptionalUser } = require('../middleware/auth');
 const { getCarbonSavedForUser, getCarbonSavedForUsers } = require('../models/carbon');
-const { isValidCity } = require('../models/cities');
+const { isValidTripCity } = require('../models/cities');
 const { findUserById } = require('../models/users');
 const {
   createTrip,
@@ -24,7 +24,7 @@ function validatePinnedLocations({
   destinationLatitude,
   destinationLongitude,
 }) {
-  if (!isValidCity(originCity) || !isValidCity(destinationCity)) {
+  if (!isValidTripCity(originCity) || !isValidTripCity(destinationCity)) {
     return {
       error: 'Trip endpoints must resolve to supported regions.',
     };
@@ -168,6 +168,13 @@ async function updateTripHandler(req, res) {
 
   if (Number(seatsAvailable) < 0) {
     return res.status(400).json({ error: 'Seats available cannot be negative.' });
+  }
+
+  const departureDate = new Date(departureTime);
+  if (Number.isNaN(departureDate.getTime())) {
+    return res.status(400).json({
+      error: 'Departure time must be a valid date.',
+    });
   }
 
   const validation = validatePinnedLocations({

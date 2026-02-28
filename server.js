@@ -41,10 +41,14 @@ app.use('/uploads', uploadRoutes);
 app.use('/users', userRoutes);
 
 app.use((err, _req, res, _next) => {
-  if (err) {
-    return res.status(400).json({ error: err.message || 'Unexpected server error.' });
-  }
-  return res.status(500).json({ error: 'Unknown server error.' });
+  console.error('Server error:', err);
+  const status = err.status ?? err.statusCode ?? 500;
+  const message = err.message || 'Unexpected server error.';
+  res.status(status >= 400 ? status : 500).json({ error: message });
+});
+
+app.use((_req, res) => {
+  res.status(404).json({ error: 'Not found.' });
 });
 
 app.listen(port, () => {

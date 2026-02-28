@@ -61,6 +61,18 @@ const SUPPORTED_CITIES = Object.freeze(
   CITY_DETAILS.map((city) => city.apiValue),
 );
 
+const TRIP_CITIES = Object.freeze([
+  'provo_ut',
+  'logan_ut',
+  'salt_lake_city_ut',
+  'rexburg_id',
+  'tempe_az',
+]);
+
+function isValidTripCity(city) {
+  return TRIP_CITIES.includes(city);
+}
+
 const CITY_LOOKUP = Object.freeze(
   Object.fromEntries(CITY_DETAILS.map((city) => [city.apiValue, city])),
 );
@@ -77,7 +89,9 @@ module.exports = {
   CITY_DETAILS,
   CITY_ENUM,
   SUPPORTED_CITIES,
+  TRIP_CITIES,
   CITY_LOOKUP,
   isValidCity,
+  isValidTripCity,
   getCityByValue,
 };
