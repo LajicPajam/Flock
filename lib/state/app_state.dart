@@ -132,6 +132,26 @@ class AppState extends ChangeNotifier {
     await loadTrips();
   }
 
+  Future<void> updateTrip({
+    required int tripId,
+    required String originCity,
+    required String destinationCity,
+    required DateTime departureTime,
+    required int seatsAvailable,
+    required String notes,
+  }) async {
+    await _api.updateTrip(
+      token: _requireToken(),
+      tripId: tripId,
+      originCity: originCity,
+      destinationCity: destinationCity,
+      departureTime: departureTime,
+      seatsAvailable: seatsAvailable,
+      notes: notes,
+    );
+    await loadTrips();
+  }
+
   Future<void> requestSeat({
     required int tripId,
     required String message,
@@ -213,6 +233,25 @@ class AppState extends ChangeNotifier {
     );
     _currentUser = user;
     notifyListeners();
+  }
+
+  Future<void> createReview({
+    required int tripId,
+    required int revieweeId,
+    required int rating,
+    required String comment,
+  }) {
+    return _api.createReview(
+      token: _requireToken(),
+      tripId: tripId,
+      revieweeId: revieweeId,
+      rating: rating,
+      comment: comment,
+    );
+  }
+
+  Future<UserReviewsResult> loadUserReviews(int userId) {
+    return _api.fetchUserReviews(userId);
   }
 
   void logout() {

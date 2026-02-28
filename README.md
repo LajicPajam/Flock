@@ -160,6 +160,7 @@ npm install
 ```bash
 psql "$DATABASE_URL" -f migrations/001_init.sql
 psql "$DATABASE_URL" -f migrations/002_driver_profiles.sql
+psql "$DATABASE_URL" -f migrations/003_reviews.sql
 ```
 
 7. Start the API:
@@ -176,9 +177,11 @@ The backend defaults to `http://localhost:3000`.
 - `POST /auth/login`
 - `POST /uploads/profile-photo`
 - `POST /users/me/driver-profile`
+- `GET /users/:id/reviews`
 - `POST /trips`
 - `GET /trips`
 - `GET /trips/:id`
+- `POST /trips/:id/reviews`
 - `POST /trips/:id/request`
 - `POST /requests/:id/accept`
 - `POST /requests/:id/reject`

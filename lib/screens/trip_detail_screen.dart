@@ -4,10 +4,13 @@ import 'package:provider/provider.dart';
 import '../models/city.dart';
 import '../models/trip.dart';
 import '../state/app_state.dart';
+import 'create_trip_screen.dart';
+import 'leave_review_screen.dart';
 import '../theme/app_colors.dart';
 import '../widgets/tier_badge.dart';
 import 'messages_screen.dart';
 import 'ui_shell.dart';
+import 'user_reviews_screen.dart';
 
 class TripDetailScreen extends StatefulWidget {
   const TripDetailScreen({super.key, required this.tripId});
@@ -98,6 +101,37 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     }
   }
 
+  Future<void> _openReview({
+    required int revieweeId,
+    required String revieweeName,
+  }) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => LeaveReviewScreen(
+          tripId: widget.tripId,
+          revieweeId: revieweeId,
+          revieweeName: revieweeName,
+        ),
+      ),
+    );
+
+    if (result == true && mounted) {
+      await _reload();
+    }
+  }
+
+  Future<void> _editTrip(Trip trip) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => CreateTripScreen(existingTrip: trip)),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    await _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -125,6 +159,13 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           final isDriver = appState.currentUser?.id == trip.driverId;
           final requestAccepted = trip.viewerRequest?.isAccepted ?? false;
           final canOpenMessages = isDriver || requestAccepted;
+          final tripInPast = trip.departureTime.toLocal().isBefore(
+            DateTime.now(),
+          );
+          final canViewCarInfo =
+              trip.driverCarMake.isNotEmpty ||
+              trip.driverCarModel.isNotEmpty ||
+              trip.driverCarPlateNumber.isNotEmpty;
 
           final origin = CollegeCity.fromApiValue(trip.originCity);
           final destination = CollegeCity.fromApiValue(trip.destinationCity);
@@ -144,6 +185,14 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                       const SizedBox(height: 8),
                       Text('Departure: ${trip.departureTime.toLocal()}'),
                       Text('Seats available: ${trip.seatsAvailable}'),
+                      if (isDriver) ...[
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () => _editTrip(trip),
+                          icon: const Icon(Icons.edit),
+                          label: const Text('Edit This Trip'),
+                        ),
+                      ],
                       if (trip.notes.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Text('Notes: ${trip.notes}'),
@@ -179,20 +228,41 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                               ],
                             ),
                           ),
+                          IconButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => UserReviewsScreen(
+                                    userId: trip.driverId,
+                                    title: '${trip.driverName} Reviews',
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.star_outline),
+                            tooltip: 'View Reviews',
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Car: ${trip.driverCarColor} ${trip.driverCarMake} ${trip.driverCarModel}'
-                            .trim(),
-                      ),
-                      Text(
-                        'Plate: ${trip.driverCarPlateState} ${trip.driverCarPlateNumber}'
-                            .trim(),
-                      ),
-                      if (trip.driverCarDescription.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text('Vehicle notes: ${trip.driverCarDescription}'),
+                      if (canViewCarInfo) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Car: ${trip.driverCarColor} ${trip.driverCarMake} ${trip.driverCarModel}'
+                              .trim(),
+                        ),
+                        Text(
+                          'Plate: ${trip.driverCarPlateState} ${trip.driverCarPlateNumber}'
+                              .trim(),
+                        ),
+                        if (trip.driverCarDescription.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text('Vehicle notes: ${trip.driverCarDescription}'),
+                        ],
+                      ] else if (!isDriver) ...[
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Vehicle details unlock after your ride request is accepted.',
+                        ),
                       ],
                     ],
                   ),
@@ -233,6 +303,19 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                           ),
                         ] else
                           Text(trip.viewerRequest!.message),
+                        if (requestAccepted && tripInPast) ...[
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.tonal(
+                              onPressed: () => _openReview(
+                                revieweeId: trip.driverId,
+                                revieweeName: trip.driverName,
+                              ),
+                              child: const Text('Leave Driver Review'),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -279,6 +362,21 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                       spacing: 8,
                                       children: [
                                         Chip(label: Text(request.status)),
+                                        IconButton(
+                                          onPressed: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute<void>(
+                                                builder: (_) => UserReviewsScreen(
+                                                  userId: request.riderId,
+                                                  title:
+                                                      '${request.riderName ?? 'Rider'} Reviews',
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          icon: const Icon(Icons.star_outline),
+                                          tooltip: 'View Reviews',
+                                        ),
                                         if (request.status == 'pending')
                                           FilledButton.tonal(
                                             onPressed: () => _updateRequest(
@@ -294,6 +392,16 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                               false,
                                             ),
                                             child: const Text('Reject'),
+                                          ),
+                                        if (request.status == 'accepted' &&
+                                            tripInPast)
+                                          FilledButton.tonal(
+                                            onPressed: () => _openReview(
+                                              revieweeId: request.riderId,
+                                              revieweeName:
+                                                  request.riderName ?? 'Rider',
+                                            ),
+                                            child: const Text('Leave Review'),
                                           ),
                                       ],
                                     ),

@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/city.dart';
+import '../models/trip.dart';
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
 import 'ui_shell.dart';
 
 class CreateTripScreen extends StatefulWidget {
-  const CreateTripScreen({super.key});
+  const CreateTripScreen({super.key, this.existingTrip});
+
+  final Trip? existingTrip;
 
   @override
   State<CreateTripScreen> createState() => _CreateTripScreenState();
@@ -29,6 +32,8 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   DateTime _departure = DateTime.now().add(const Duration(days: 1));
   bool _saving = false;
   bool _savingDriverProfile = false;
+
+  bool get _isEditing => widget.existingTrip != null;
 
   String get _departureLabel {
     final month = _monthName(_departure.month);
@@ -54,6 +59,19 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       'Dec',
     ];
     return months[month - 1];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final existingTrip = widget.existingTrip;
+    if (existingTrip != null) {
+      _origin = CollegeCity.fromApiValue(existingTrip.originCity);
+      _destination = CollegeCity.fromApiValue(existingTrip.destinationCity);
+      _departure = existingTrip.departureTime.toLocal();
+      _seatsController.text = existingTrip.seatsAvailable.toString();
+      _notesController.text = existingTrip.notes;
+    }
   }
 
   @override
@@ -120,13 +138,25 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     });
 
     try {
-      await context.read<AppState>().createTrip(
-        originCity: _origin.apiValue,
-        destinationCity: _destination.apiValue,
-        departureTime: _departure,
-        seatsAvailable: int.parse(_seatsController.text),
-        notes: _notesController.text.trim(),
-      );
+      final appState = context.read<AppState>();
+      if (_isEditing) {
+        await appState.updateTrip(
+          tripId: widget.existingTrip!.id,
+          originCity: _origin.apiValue,
+          destinationCity: _destination.apiValue,
+          departureTime: _departure,
+          seatsAvailable: int.parse(_seatsController.text),
+          notes: _notesController.text.trim(),
+        );
+      } else {
+        await appState.createTrip(
+          originCity: _origin.apiValue,
+          destinationCity: _destination.apiValue,
+          departureTime: _departure,
+          seatsAvailable: int.parse(_seatsController.text),
+          notes: _notesController.text.trim(),
+        );
+      }
       if (!mounted) {
         return;
       }
@@ -216,13 +246,13 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     final isDriver = currentUser?.isDriver ?? false;
 
     return UiShell(
-      title: 'Create Trip',
+      title: _isEditing ? 'Edit Trip' : 'Create Trip',
       child: ListView(
         children: [
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: !isDriver
+              child: !isDriver && !_isEditing
                   ? Form(
                       key: _driverFormKey,
                       child: Column(
@@ -458,7 +488,13 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                             width: double.infinity,
                             child: FilledButton(
                               onPressed: _saving ? null : _submit,
-                              child: Text(_saving ? 'Saving...' : 'Post Trip'),
+                              child: Text(
+                                _saving
+                                    ? 'Saving...'
+                                    : _isEditing
+                                    ? 'Save Changes'
+                                    : 'Post Trip',
+                              ),
                             ),
                           ),
                         ],

@@ -7,6 +7,7 @@ import 'package:http_parser/http_parser.dart';
 import '../models/auth_user.dart';
 import '../models/carbon_stats.dart';
 import '../models/chat_message.dart';
+import '../models/review.dart';
 import '../models/trip.dart';
 
 class ApiResult {
@@ -26,6 +27,18 @@ class MessagesResult {
   final List<ChatMessage> messages;
   final List<Map<String, dynamic>> acceptedRiders;
   final int? participantId;
+}
+
+class UserReviewsResult {
+  UserReviewsResult({
+    required this.reviews,
+    required this.reviewCount,
+    required this.averageRating,
+  });
+
+  final List<Review> reviews;
+  final int reviewCount;
+  final double averageRating;
 }
 
 class ApiService {
@@ -138,6 +151,30 @@ class ApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/trips'),
+      headers: _headers(token),
+      body: jsonEncode({
+        'originCity': originCity,
+        'destinationCity': destinationCity,
+        'departureTime': departureTime.toUtc().toIso8601String(),
+        'seatsAvailable': seatsAvailable,
+        'notes': notes,
+      }),
+    );
+
+    _decode(response);
+  }
+
+  Future<void> updateTrip({
+    required String token,
+    required int tripId,
+    required String originCity,
+    required String destinationCity,
+    required DateTime departureTime,
+    required int seatsAvailable,
+    required String notes,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/trips/$tripId'),
       headers: _headers(token),
       body: jsonEncode({
         'originCity': originCity,
@@ -355,6 +392,44 @@ class ApiService {
 
     final data = _decode(response) as Map<String, dynamic>;
     return CarbonStats.fromJson(data);
+  }
+
+  Future<void> createReview({
+    required String token,
+    required int tripId,
+    required int revieweeId,
+    required int rating,
+    required String comment,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/trips/$tripId/reviews'),
+      headers: _headers(token),
+      body: jsonEncode({
+        'revieweeId': revieweeId,
+        'rating': rating,
+        'comment': comment,
+      }),
+    );
+
+    _decode(response);
+  }
+
+  Future<UserReviewsResult> fetchUserReviews(int userId) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/$userId/reviews'),
+    );
+    final data = _decode(response) as Map<String, dynamic>;
+    final rawReviews = data['reviews'] as List<dynamic>? ?? const [];
+    final summary = data['summary'] as Map<String, dynamic>? ?? const {};
+
+    return UserReviewsResult(
+      reviews: rawReviews
+          .map((item) => Review.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      reviewCount: summary['review_count'] as int? ?? 0,
+      averageRating:
+          double.tryParse('${summary['average_rating'] ?? 0}') ?? 0.0,
+    );
   }
 
   ApiResult _parseAuthResult(http.Response response) {
