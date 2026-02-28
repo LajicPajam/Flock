@@ -130,6 +130,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       title: 'Create Account',
       child: ListView(
         children: [
+          const SizedBox(height: 16),
+          Center(
+            child: Image.asset(
+              'assets/flock_logo.png',
+              height: 60,
+              fit: BoxFit.contain,
+            ),
+          ),
+          const SizedBox(height: 16),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),

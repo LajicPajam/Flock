@@ -19,7 +19,17 @@ class UiShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title), actions: actions),
+      appBar: AppBar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/flock_icon.png', height: 28),
+            const SizedBox(width: 8),
+            Text(title),
+          ],
+        ),
+        actions: actions,
+      ),
       floatingActionButton: floatingActionButton,
       body: SafeArea(
         child: Center(

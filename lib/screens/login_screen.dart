@@ -53,6 +53,14 @@ class _LoginScreenState extends State<LoginScreen> {
       title: 'Flock Carpool',
       child: ListView(
         children: [
+          const SizedBox(height: 32),
+          Center(
+            child: Image.asset(
+              'assets/flock_logo.png',
+              height: 80,
+              fit: BoxFit.contain,
+            ),
+          ),
           const SizedBox(height: 24),
           Card(
             child: Padding(
