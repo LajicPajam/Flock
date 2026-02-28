@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
+import '../models/app_options.dart';
 import '../models/city.dart';
 import '../models/ride_request.dart';
 import '../models/trip.dart' show Trip, formatDepartureTime;
@@ -289,6 +290,24 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
+                      if (trip.hasEvent) ...[
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _EventChip(
+                              icon: Icons.celebration_outlined,
+                              label: trip.eventCategory ?? 'Event',
+                            ),
+                            if ((trip.eventName ?? '').trim().isNotEmpty)
+                              _EventChip(
+                                icon: Icons.event_available_outlined,
+                                label: trip.eventName!,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       const Divider(height: 24),
                       _TripDetailValueRow(
                         label: 'Departure',
@@ -394,9 +413,24 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                     ),
                                   ],
                                 ),
-                                Text(
-                                  'Phone: ${formatPhoneNumber(trip.driverPhoneNumber)}',
-                                ),
+                                if (trip.driverPhoneNumber.isNotEmpty)
+                                  Text(
+                                    'Phone: ${formatPhoneNumber(trip.driverPhoneNumber)}',
+                                  )
+                                else if (!isDriver)
+                                  Text(
+                                    'Phone unlocks after your request is accepted.',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: AppColors.textInk.withValues(
+                                            alpha: 0.68,
+                                          ),
+                                        ),
+                                  ),
+                                if ((trip.driverGender ?? '').isNotEmpty)
+                                  Text(
+                                    'Driver gender: ${formatDriverGender(trip.driverGender)}',
+                                  ),
                                 if (trip.driverIsStudentVerified)
                                   Text(
                                     trip.driverVerifiedSchoolName == null ||
@@ -699,6 +733,42 @@ class _TripDetailValueRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _EventChip extends StatelessWidget {
+  const _EventChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.canvasBackground,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.subtleBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: AppColors.primaryGreen),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 240),
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

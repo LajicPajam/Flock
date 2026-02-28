@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/app_options.dart';
 import '../models/city.dart';
 import '../models/trip.dart';
 import '../state/app_state.dart';
@@ -22,6 +23,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   final _driverFormKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
   final _meetingSpotController = TextEditingController();
+  final _eventNameController = TextEditingController();
   final _seatsController = TextEditingController(text: '3');
   final _carMakeController = TextEditingController();
   final _carModelController = TextEditingController();
@@ -34,6 +36,8 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     CollegeCity.loganUt,
   );
   DateTime _departure = DateTime.now().add(const Duration(days: 1));
+  String? _eventCategory;
+  String? _driverGender;
   bool _saving = false;
   bool _savingDriverProfile = false;
 
@@ -88,16 +92,22 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
             existingTrip.destinationLongitude ?? destinationCity.longitude,
       );
       _departure = existingTrip.departureTime.toLocal();
+      _eventCategory = existingTrip.eventCategory;
+      _eventNameController.text = existingTrip.eventName ?? '';
       _seatsController.text = existingTrip.seatsAvailable.toString();
       _meetingSpotController.text = existingTrip.meetingSpot;
       _notesController.text = existingTrip.notes;
     }
+
+    final currentUser = context.read<AppState>().currentUser;
+    _driverGender = currentUser?.gender;
   }
 
   @override
   void dispose() {
     _notesController.dispose();
     _meetingSpotController.dispose();
+    _eventNameController.dispose();
     _seatsController.dispose();
     _carMakeController.dispose();
     _carModelController.dispose();
@@ -219,6 +229,10 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
           departureTime: _departure,
           seatsAvailable: int.parse(_seatsController.text),
           meetingSpot: _meetingSpotController.text.trim(),
+          eventCategory: _eventCategory,
+          eventName: _eventNameController.text.trim().isEmpty
+              ? null
+              : _eventNameController.text.trim(),
           notes: _notesController.text.trim(),
         );
       } else {
@@ -234,6 +248,10 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
           departureTime: _departure,
           seatsAvailable: int.parse(_seatsController.text),
           meetingSpot: _meetingSpotController.text.trim(),
+          eventCategory: _eventCategory,
+          eventName: _eventNameController.text.trim().isEmpty
+              ? null
+              : _eventNameController.text.trim(),
           notes: _notesController.text.trim(),
         );
       }
@@ -276,6 +294,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
         carPlateState: _carPlateStateController.text.trim(),
         carPlateNumber: _carPlateNumberController.text.trim(),
         carDescription: _carDescriptionController.text.trim(),
+        gender: _driverGender ?? '',
       );
       if (!mounted) {
         return;
@@ -370,6 +389,30 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                           _buildField(
                             controller: _carPlateNumberController,
                             label: 'Plate Number',
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            initialValue: _driverGender,
+                            decoration: const InputDecoration(
+                              labelText: 'Driver Gender',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: driverGenderOptions
+                                .map(
+                                  (value) => DropdownMenuItem(
+                                    value: value,
+                                    child: Text(formatDriverGender(value)),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _driverGender = value;
+                              });
+                            },
+                            validator: (value) => value == null
+                                ? 'Select driver gender.'
+                                : null,
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
@@ -494,6 +537,42 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                             decoration: const InputDecoration(
                               labelText: 'Meeting Spot (optional)',
                               hintText: 'Library parking lot, south entrance',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String?>(
+                            initialValue: _eventCategory,
+                            decoration: const InputDecoration(
+                              labelText: 'Event Category (optional)',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('No linked event'),
+                              ),
+                              ...tripEventCategories.map(
+                                (category) => DropdownMenuItem<String?>(
+                                  value: category,
+                                  child: Text(category),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _eventCategory = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _eventNameController,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'Event Name (optional)',
+                              hintText:
+                                  'BYU vs U of U basketball game, homecoming, conference',
                               border: OutlineInputBorder(),
                             ),
                           ),

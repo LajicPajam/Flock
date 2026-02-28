@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../models/app_options.dart';
 import '../models/auth_user.dart';
 import '../models/carbon_stats.dart';
 import '../state/app_state.dart';
@@ -44,6 +45,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _sendingStudentCode = false;
   bool _confirmingStudentCode = false;
   String? _devVerificationCode;
+  String? _gender;
 
   @override
   void initState() {
@@ -93,6 +95,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _carPlateStateController.text = user.carPlateState ?? '';
     _carPlateNumberController.text = user.carPlateNumber ?? '';
     _carDescriptionController.text = user.carDescription ?? '';
+    _gender = user.gender;
     _profilePhotoUrl = user.profilePhotoUrl;
   }
 
@@ -257,6 +260,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
 
+      if (hasAllDriverFields && _gender == null) {
+        throw Exception('Select driver gender to stay registered as a driver.');
+      }
+
       await appState.updateProfile(
         name: _nameController.text.trim(),
         phoneNumber: digitsOnlyPhone(_phoneController.text),
@@ -273,6 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         favoritePlaylist: _favoritePlaylistController.text.trim().isEmpty
             ? null
             : _favoritePlaylistController.text.trim(),
+        gender: _gender,
         carMake: hasAllDriverFields ? driverFields[0] : null,
         carModel: hasAllDriverFields ? driverFields[1] : null,
         carColor: hasAllDriverFields ? driverFields[2] : null,
@@ -610,6 +618,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         labelText: 'Plate Number',
                         border: OutlineInputBorder(),
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: _gender,
+                      decoration: const InputDecoration(
+                        labelText: 'Driver Gender',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: driverGenderOptions
+                          .map(
+                            (value) => DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(formatDriverGender(value)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _gender = value;
+                        });
+                      },
                     ),
                     const SizedBox(height: 12),
                     TextFormField(

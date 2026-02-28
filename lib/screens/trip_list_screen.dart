@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../debug_log.dart';
+import '../models/app_options.dart';
 import '../models/city.dart';
 import '../models/trip.dart' show Trip;
 import '../services/location_service.dart';
@@ -34,6 +35,9 @@ class _TripListScreenState extends State<TripListScreen> {
   LocationSelection? _originFilter;
   LocationSelection? _destinationFilter;
   DateTime? _departureDateFilter;
+  final TextEditingController _eventQueryController = TextEditingController();
+  String? _eventCategoryFilter;
+  String? _driverGenderFilter;
   LocationSelection? _nearbyLocation;
   List<Trip> _nearbyTrips = const [];
   String? _nearbyTripsError;
@@ -42,6 +46,12 @@ class _TripListScreenState extends State<TripListScreen> {
   @override
   void initState() {
     super.initState();
+    _eventQueryController.addListener(() {
+      if (!mounted) {
+        return;
+      }
+      setState(() {});
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final appState = context.read<AppState>();
       await appState.loadTrips();
@@ -65,6 +75,12 @@ class _TripListScreenState extends State<TripListScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _eventQueryController.dispose();
+    super.dispose();
+  }
+
   List<Trip> _filteredTrips(List<Trip> trips) {
     return trips.where((trip) {
       if (trip.isHistory) {
@@ -74,7 +90,22 @@ class _TripListScreenState extends State<TripListScreen> {
       final matchesDepartureDate =
           _departureDateFilter == null ||
           _isSameDay(trip.departureTime.toLocal(), _departureDateFilter!);
-      return matchesRoute && matchesDepartureDate;
+      final eventQuery = _eventQueryController.text.trim().toLowerCase();
+      final tripEventName = (trip.eventName ?? '').toLowerCase();
+      final tripEventCategory = (trip.eventCategory ?? '').toLowerCase();
+      final matchesEventName =
+          eventQuery.isEmpty || tripEventName.contains(eventQuery);
+      final matchesEventCategory =
+          _eventCategoryFilter == null ||
+          tripEventCategory == _eventCategoryFilter!.toLowerCase();
+      final matchesDriverGender =
+          _driverGenderFilter == null ||
+          (trip.driverGender ?? '').toLowerCase() == _driverGenderFilter;
+      return matchesRoute &&
+          matchesDepartureDate &&
+          matchesEventName &&
+          matchesEventCategory &&
+          matchesDriverGender;
     }).toList();
   }
 
@@ -380,6 +411,7 @@ class _TripListScreenState extends State<TripListScreen> {
 
     return UiShell(
       useWideLayout: true,
+      preferBrandLeading: true,
       title: 'Available Trips',
       actions: [
         PopupMenuButton<_TripMenuAction>(
@@ -488,6 +520,19 @@ class _TripListScreenState extends State<TripListScreen> {
                     departureLabel: _departureDateFilter == null
                         ? 'Any date'
                         : _dateLabel(_departureDateFilter!),
+                    eventController: _eventQueryController,
+                    selectedEventCategory: _eventCategoryFilter,
+                    selectedDriverGender: _driverGenderFilter,
+                    onEventCategoryChanged: (value) {
+                      setState(() {
+                        _eventCategoryFilter = value;
+                      });
+                    },
+                    onDriverGenderChanged: (value) {
+                      setState(() {
+                        _driverGenderFilter = value;
+                      });
+                    },
                     onPickOrigin: _pickOriginOnMap,
                     onPickDestination: _pickDestinationOnMap,
                     onPickDepartureDate: _pickDepartureDate,
@@ -496,6 +541,9 @@ class _TripListScreenState extends State<TripListScreen> {
                         _originFilter = null;
                         _destinationFilter = null;
                         _departureDateFilter = null;
+                        _eventQueryController.clear();
+                        _eventCategoryFilter = null;
+                        _driverGenderFilter = null;
                       });
                     },
                   ),
@@ -682,6 +730,13 @@ class _TripCard extends StatelessWidget {
                     label:
                         '${trip.seatsAvailable} seat${trip.seatsAvailable == 1 ? '' : 's'}',
                   ),
+                  if (trip.hasEvent)
+                    _InfoPill(
+                      icon: Icons.celebration_outlined,
+                      label: trip.eventName?.trim().isNotEmpty == true
+                          ? trip.eventName!
+                          : trip.eventCategory!,
+                    ),
                 ],
               ),
               if (trip.meetingSpot.isNotEmpty) ...[
@@ -846,11 +901,16 @@ class _InfoPill extends StatelessWidget {
   }
 }
 
-class _FindATripBar extends StatelessWidget {
+class _FindATripBar extends StatefulWidget {
   const _FindATripBar({
     required this.originLabel,
     required this.destinationLabel,
     required this.departureLabel,
+    required this.eventController,
+    required this.selectedEventCategory,
+    required this.selectedDriverGender,
+    required this.onEventCategoryChanged,
+    required this.onDriverGenderChanged,
     required this.onPickOrigin,
     required this.onPickDestination,
     required this.onPickDepartureDate,
@@ -860,10 +920,22 @@ class _FindATripBar extends StatelessWidget {
   final String originLabel;
   final String destinationLabel;
   final String departureLabel;
+  final TextEditingController eventController;
+  final String? selectedEventCategory;
+  final String? selectedDriverGender;
+  final ValueChanged<String?> onEventCategoryChanged;
+  final ValueChanged<String?> onDriverGenderChanged;
   final VoidCallback onPickOrigin;
   final VoidCallback onPickDestination;
   final VoidCallback onPickDepartureDate;
   final VoidCallback onClearFilters;
+
+  @override
+  State<_FindATripBar> createState() => _FindATripBarState();
+}
+
+class _FindATripBarState extends State<_FindATripBar> {
+  bool _showAdvanced = false;
 
   @override
   Widget build(BuildContext context) {
@@ -882,6 +954,153 @@ class _FindATripBar extends StatelessWidget {
           hypothesisId: 'H2',
         );
         // #endregion
+        final routeContent = useRow
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: _FilterMapButton(
+                      label: 'Starting Area',
+                      value: widget.originLabel,
+                      icon: Icons.trip_origin,
+                      onPressed: widget.onPickOrigin,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _FilterMapButton(
+                      label: 'Destination Area',
+                      value: widget.destinationLabel,
+                      icon: Icons.location_on_outlined,
+                      onPressed: widget.onPickDestination,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: OutlinedButton.icon(
+                      onPressed: widget.onPickDepartureDate,
+                      icon: const Icon(Icons.event, size: 20),
+                      label: Text(
+                        widget.departureLabel,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: TextButton(
+                      onPressed: widget.onClearFilters,
+                      child: const Text('Clear'),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _FilterMapButton(
+                    label: 'Starting Area',
+                    value: widget.originLabel,
+                    icon: Icons.trip_origin,
+                    onPressed: widget.onPickOrigin,
+                  ),
+                  const SizedBox(height: 12),
+                  _FilterMapButton(
+                    label: 'Destination Area',
+                    value: widget.destinationLabel,
+                    icon: Icons.location_on_outlined,
+                    onPressed: widget.onPickDestination,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: widget.onPickDepartureDate,
+                          icon: const Icon(Icons.event),
+                          label: Text(
+                            widget.departureLabel,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: widget.onClearFilters,
+                        child: const Text('Clear Filters'),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+        final advancedContent = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: widget.eventController,
+              decoration: const InputDecoration(
+                labelText: 'Event Name',
+                hintText: 'Search for a game, concert, meetup...',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: widget.selectedEventCategory,
+              decoration: const InputDecoration(
+                labelText: 'Event Category',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('Any category'),
+                ),
+                ...tripEventCategories.map(
+                  (category) => DropdownMenuItem<String?>(
+                    value: category,
+                    child: Text(category),
+                  ),
+                ),
+              ],
+              onChanged: widget.onEventCategoryChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: widget.selectedDriverGender,
+              decoration: const InputDecoration(
+                labelText: 'Driver Gender',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('Any driver'),
+                ),
+                ...driverGenderOptions.map(
+                  (value) => DropdownMenuItem<String?>(
+                    value: value,
+                    child: Text(formatDriverGender(value)),
+                  ),
+                ),
+              ],
+              onChanged: widget.onDriverGenderChanged,
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: widget.onClearFilters,
+                child: const Text('Clear All Filters'),
+              ),
+            ),
+          ],
+        );
         final content = Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -889,97 +1108,81 @@ class _FindATripBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: AppColors.subtleBorder),
           ),
-          child: useRow
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: _FilterMapButton(
-                        label: 'Starting Area',
-                        value: originLabel,
-                        icon: Icons.trip_origin,
-                        onPressed: onPickOrigin,
-                      ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _SearchTabButton(
+                      label: 'Route',
+                      selected: !_showAdvanced,
+                      onTap: () {
+                        setState(() {
+                          _showAdvanced = false;
+                        });
+                      },
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _FilterMapButton(
-                        label: 'Destination Area',
-                        value: destinationLabel,
-                        icon: Icons.location_on_outlined,
-                        onPressed: onPickDestination,
-                      ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _SearchTabButton(
+                      label: 'Advanced',
+                      selected: _showAdvanced,
+                      onTap: () {
+                        setState(() {
+                          _showAdvanced = true;
+                        });
+                      },
                     ),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      fit: FlexFit.loose,
-                      child: OutlinedButton.icon(
-                        onPressed: onPickDepartureDate,
-                        icon: const Icon(Icons.event, size: 20),
-                        label: Text(
-                          departureLabel,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      fit: FlexFit.loose,
-                      child: TextButton(
-                        onPressed: onClearFilters,
-                        child: const Text('Clear'),
-                      ),
-                    ),
-                  ],
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _FilterMapButton(
-                      label: 'Starting Area',
-                      value: originLabel,
-                      icon: Icons.trip_origin,
-                      onPressed: onPickOrigin,
-                    ),
-                    const SizedBox(height: 12),
-                    _FilterMapButton(
-                      label: 'Destination Area',
-                      value: destinationLabel,
-                      icon: Icons.location_on_outlined,
-                      onPressed: onPickDestination,
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: onPickDepartureDate,
-                            icon: const Icon(Icons.event),
-                            label: Text(
-                              departureLabel,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        TextButton(
-                          onPressed: onClearFilters,
-                          child: const Text('Clear Filters'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _showAdvanced ? advancedContent : routeContent,
+            ],
+          ),
         );
-        // ListView gives unbounded height; constrain horizontal bar so Row gets bounded constraints.
-        // Height must fit container padding (32) + _FilterMapButton padding (28) + label + 4 + value.
-        if (useRow) {
-          return SizedBox(height: 120, child: content);
-        }
         return content;
       },
+    );
+  }
+}
+
+class _SearchTabButton extends StatelessWidget {
+  const _SearchTabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Ink(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.secondaryGreen : AppColors.canvasBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.primaryGreen : AppColors.subtleBorder,
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: selected ? AppColors.primaryGreen : AppColors.textInk,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1016,20 +1219,25 @@ class _FilterMapButton extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: AppColors.textInk.withValues(alpha: 0.66),
+                      fontSize: 11,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w600,
+                      fontSize: 17,
                     ),
                   ),
                 ],

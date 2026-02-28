@@ -15,11 +15,14 @@ const TRIP_SELECT_FIELDS = `SELECT
   t.seats_available,
   t.status,
   t.meeting_spot,
+  t.event_category,
+  t.event_name,
   t.notes,
   t.created_at,
   u.name AS driver_name,
   u.phone_number AS driver_phone_number,
   u.profile_photo_url AS driver_profile_photo_url,
+  u.gender AS driver_gender,
   u.is_student_verified AS driver_is_student_verified,
   u.verified_school_name AS driver_verified_school_name,
   u.car_make AS driver_car_make,
@@ -54,6 +57,8 @@ async function createTrip({
   departureTime,
   seatsAvailable,
   meetingSpot,
+  eventCategory,
+  eventName,
   notes,
 }) {
   const result = await db.query(
@@ -71,9 +76,11 @@ async function createTrip({
        seats_available,
        status,
        meeting_spot,
+       event_category,
+       event_name,
        notes
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'open', $12, $13)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'open', $12, $13, $14, $15)
      RETURNING *`,
     [
       driverId,
@@ -88,6 +95,8 @@ async function createTrip({
       departureTime,
       seatsAvailable,
       meetingSpot?.trim() || null,
+      eventCategory?.trim() || null,
+      eventName?.trim() || null,
       notes || null,
     ],
   );
@@ -109,6 +118,8 @@ async function updateTrip({
   departureTime,
   seatsAvailable,
   meetingSpot,
+  eventCategory,
+  eventName,
   notes,
 }) {
   const result = await db.query(
@@ -125,13 +136,15 @@ async function updateTrip({
        departure_time = $11,
        seats_available = $12,
        meeting_spot = $13,
+       event_category = $14,
+       event_name = $15,
        status = CASE
          WHEN status = 'cancelled' THEN 'cancelled'
          WHEN status = 'completed' THEN 'completed'
          WHEN $12 = 0 THEN 'full'
          ELSE 'open'
        END,
-       notes = $14
+       notes = $16
      WHERE id = $1 AND driver_id = $2
      RETURNING *`,
     [
@@ -148,6 +161,8 @@ async function updateTrip({
       departureTime,
       seatsAvailable,
       meetingSpot?.trim() || null,
+      eventCategory?.trim() || null,
+      eventName?.trim() || null,
       notes || null,
     ],
   );

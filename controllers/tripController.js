@@ -87,6 +87,8 @@ async function createTripHandler(req, res) {
     departureTime,
     seatsAvailable,
     meetingSpot,
+    eventCategory,
+    eventName,
     notes,
   } = req.body;
 
@@ -134,6 +136,8 @@ async function createTripHandler(req, res) {
       departureTime,
       seatsAvailable: Number(seatsAvailable),
       meetingSpot,
+      eventCategory,
+      eventName,
       notes,
     });
 
@@ -156,6 +160,8 @@ async function updateTripHandler(req, res) {
     departureTime,
     seatsAvailable,
     meetingSpot,
+    eventCategory,
+    eventName,
     notes,
   } = req.body;
 
@@ -216,6 +222,8 @@ async function updateTripHandler(req, res) {
       departureTime,
       seatsAvailable: Number(seatsAvailable),
       meetingSpot,
+      eventCategory,
+      eventName,
       notes,
     });
 
@@ -265,17 +273,25 @@ async function getTripByIdHandler(req, res) {
 
     let rideRequests = [];
     if (viewer && viewer.id === trip.driver_id) {
-      rideRequests = await listRideRequestsForTrip(trip.id);
+      const rawRideRequests = await listRideRequestsForTrip(trip.id);
+      rideRequests = rawRideRequests.map((request) =>
+        request.status === 'accepted'
+          ? request
+          : {
+              ...request,
+              rider_phone_number: null,
+            },
+      );
     }
 
-    const canViewCarInfo =
-      Boolean(viewer && viewer.id === trip.driver_id) ||
-      viewerRequest?.status === 'accepted';
+    const canViewContactInfo = viewerRequest?.status === 'accepted';
+    const canViewCarInfo = canViewContactInfo;
 
-    const safeTrip = canViewCarInfo
+    const safeTrip = canViewContactInfo
       ? trip
       : {
           ...trip,
+          driver_phone_number: null,
           driver_car_make: null,
           driver_car_model: null,
           driver_car_color: null,

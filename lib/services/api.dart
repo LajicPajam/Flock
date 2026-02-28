@@ -95,6 +95,7 @@ class ApiService {
     String? academicYear,
     String? vibe,
     String? favoritePlaylist,
+    String? gender,
     bool isDriver = false,
     String? carMake,
     String? carModel,
@@ -116,6 +117,7 @@ class ApiService {
         'academicYear': academicYear,
         'vibe': vibe,
         'favoritePlaylist': favoritePlaylist,
+        'gender': gender,
         'isDriver': isDriver,
         'carMake': carMake,
         'carModel': carModel,
@@ -177,6 +179,8 @@ class ApiService {
     required DateTime departureTime,
     required int seatsAvailable,
     required String meetingSpot,
+    String? eventCategory,
+    String? eventName,
     required String notes,
   }) async {
     final response = await http.post(
@@ -194,6 +198,8 @@ class ApiService {
         'departureTime': departureTime.toUtc().toIso8601String(),
         'seatsAvailable': seatsAvailable,
         'meetingSpot': meetingSpot,
+        'eventCategory': eventCategory,
+        'eventName': eventName,
         'notes': notes,
       }),
     );
@@ -215,6 +221,8 @@ class ApiService {
     required DateTime departureTime,
     required int seatsAvailable,
     required String meetingSpot,
+    String? eventCategory,
+    String? eventName,
     required String notes,
   }) async {
     final response = await http.put(
@@ -232,6 +240,8 @@ class ApiService {
         'departureTime': departureTime.toUtc().toIso8601String(),
         'seatsAvailable': seatsAvailable,
         'meetingSpot': meetingSpot,
+        'eventCategory': eventCategory,
+        'eventName': eventName,
         'notes': notes,
       }),
     );
@@ -315,6 +325,7 @@ class ApiService {
     required String carPlateState,
     required String carPlateNumber,
     required String carDescription,
+    required String gender,
   }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/users/me/driver-profile'),
@@ -326,6 +337,7 @@ class ApiService {
         'carPlateState': carPlateState,
         'carPlateNumber': carPlateNumber,
         'carDescription': carDescription,
+        'gender': gender,
       }),
     );
 
@@ -352,6 +364,7 @@ class ApiService {
     String? academicYear,
     String? vibe,
     String? favoritePlaylist,
+    String? gender,
     String? carMake,
     String? carModel,
     String? carColor,
@@ -370,6 +383,7 @@ class ApiService {
         'academicYear': academicYear,
         'vibe': vibe,
         'favoritePlaylist': favoritePlaylist,
+        'gender': gender,
         'carMake': carMake,
         'carModel': carModel,
         'carColor': carColor,

@@ -26,6 +26,7 @@ function sanitizeUser(user) {
     academic_year: user.academic_year,
     vibe: user.vibe,
     favorite_playlist: user.favorite_playlist,
+    gender: user.gender,
     student_email: user.student_email,
     pending_student_email: user.pending_student_email,
     is_student_verified: user.is_student_verified,
@@ -90,11 +91,18 @@ async function updateDriverProfileHandler(req, res) {
     carPlateState,
     carPlateNumber,
     carDescription,
+    gender,
   } = req.body;
 
   if (!carMake || !carModel || !carColor || !carPlateState || !carPlateNumber) {
     return res.status(400).json({
       error: 'Car make, model, color, plate state, and plate number are required.',
+    });
+  }
+
+  if (!gender || !['male', 'female'].includes(String(gender).toLowerCase())) {
+    return res.status(400).json({
+      error: 'Drivers must set gender to male or female.',
     });
   }
 
@@ -107,6 +115,7 @@ async function updateDriverProfileHandler(req, res) {
       carPlateState: carPlateState.trim(),
       carPlateNumber: carPlateNumber.trim(),
       carDescription: carDescription?.trim() || null,
+      gender: gender.trim().toLowerCase(),
     });
 
     return res.json({ user: sanitizeUser(user) });
@@ -124,6 +133,7 @@ async function updateCurrentUserHandler(req, res) {
     academicYear,
     vibe,
     favoritePlaylist,
+    gender,
     carMake,
     carModel,
     carColor,
@@ -146,12 +156,25 @@ async function updateCurrentUserHandler(req, res) {
     carPlateNumber?.trim() || '',
   ];
 
-  const anyDriverField = driverFields.some((value) => value.isNotEmpty);
-  const allDriverFields = driverFields.every((value) => value.isNotEmpty);
+  const anyDriverField = driverFields.some((value) => value.length > 0);
+  const allDriverFields = driverFields.every((value) => value.length > 0);
 
   if (anyDriverField && !allDriverFields) {
     return res.status(400).json({
       error: 'To stay registered as a driver, fill in all required car fields.',
+    });
+  }
+
+  const normalizedGender = gender?.trim().toLowerCase() || null;
+  if (allDriverFields && !normalizedGender) {
+    return res.status(400).json({
+      error: 'Drivers must set gender to male or female.',
+    });
+  }
+
+  if (normalizedGender && !['male', 'female'].includes(normalizedGender)) {
+    return res.status(400).json({
+      error: 'Gender must be either male or female.',
     });
   }
 
@@ -165,6 +188,7 @@ async function updateCurrentUserHandler(req, res) {
       academicYear: academicYear?.trim() || null,
       vibe: vibe?.trim() || null,
       favoritePlaylist: favoritePlaylist?.trim() || null,
+      gender: normalizedGender,
       carMake: allDriverFields ? carMake.trim() : null,
       carModel: allDriverFields ? carModel.trim() : null,
       carColor: allDriverFields ? carColor.trim() : null,

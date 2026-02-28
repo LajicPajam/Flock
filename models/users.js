@@ -9,6 +9,7 @@ const USER_RETURN_FIELDS = `id,
        academic_year,
        vibe,
        favorite_playlist,
+       gender,
        is_driver,
        car_make,
        car_model,
@@ -35,6 +36,7 @@ async function createUser({
   academicYear = null,
   vibe = null,
   favoritePlaylist = null,
+  gender = null,
   isDriver = false,
   carMake = null,
   carModel = null,
@@ -54,6 +56,7 @@ async function createUser({
        academic_year,
        vibe,
        favorite_playlist,
+       gender,
        is_driver,
        car_make,
        car_model,
@@ -62,7 +65,7 @@ async function createUser({
        car_plate_number,
        car_description
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
      RETURNING ${USER_RETURN_FIELDS}`,
     [
       name,
@@ -74,6 +77,7 @@ async function createUser({
       academicYear,
       vibe,
       favoritePlaylist,
+      gender,
       isDriver,
       carMake,
       carModel,
@@ -120,6 +124,7 @@ async function updateDriverProfile({
   carPlateState,
   carPlateNumber,
   carDescription,
+  gender,
 }) {
   const result = await db.query(
     `UPDATE users
@@ -130,7 +135,8 @@ async function updateDriverProfile({
        car_color = $4,
        car_plate_state = $5,
        car_plate_number = $6,
-       car_description = $7
+       car_description = $7,
+       gender = $8
      WHERE id = $1
      RETURNING ${USER_RETURN_FIELDS}`,
     [
@@ -141,6 +147,7 @@ async function updateDriverProfile({
       carPlateState,
       carPlateNumber,
       carDescription,
+      gender,
     ],
   );
 
@@ -156,6 +163,7 @@ async function updateUserProfile({
   academicYear,
   vibe,
   favoritePlaylist,
+  gender,
   carMake,
   carModel,
   carColor,
@@ -173,14 +181,15 @@ async function updateUserProfile({
        academic_year = $6,
        vibe = $7,
        favorite_playlist = $8,
-       car_make = $9,
-       car_model = $10,
-       car_color = $11,
-       car_plate_state = $12,
-       car_plate_number = $13,
-       car_description = $14,
+       gender = $9,
+       car_make = $10,
+       car_model = $11,
+       car_color = $12,
+       car_plate_state = $13,
+       car_plate_number = $14,
+       car_description = $15,
        is_driver = CASE
-         WHEN $9 IS NOT NULL AND $10 IS NOT NULL AND $11 IS NOT NULL AND $12 IS NOT NULL AND $13 IS NOT NULL
+         WHEN $10 IS NOT NULL AND $11 IS NOT NULL AND $12 IS NOT NULL AND $13 IS NOT NULL AND $14 IS NOT NULL
            THEN TRUE
          ELSE FALSE
        END
@@ -195,6 +204,7 @@ async function updateUserProfile({
       academicYear,
       vibe,
       favoritePlaylist,
+      gender,
       carMake,
       carModel,
       carColor,

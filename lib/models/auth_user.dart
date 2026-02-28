@@ -9,6 +9,7 @@ class AuthUser {
     this.academicYear,
     this.vibe,
     this.favoritePlaylist,
+    this.gender,
     this.studentEmail,
     this.pendingStudentEmail,
     required this.isStudentVerified,
@@ -33,6 +34,7 @@ class AuthUser {
   final String? academicYear;
   final String? vibe;
   final String? favoritePlaylist;
+  final String? gender;
   final String? studentEmail;
   final String? pendingStudentEmail;
   final bool isStudentVerified;
@@ -58,6 +60,7 @@ class AuthUser {
       academicYear: json['academic_year'] as String?,
       vibe: json['vibe'] as String?,
       favoritePlaylist: json['favorite_playlist'] as String?,
+      gender: json['gender'] as String?,
       studentEmail: json['student_email'] as String?,
       pendingStudentEmail: json['pending_student_email'] as String?,
       isStudentVerified: json['is_student_verified'] as bool? ?? false,
@@ -92,6 +95,7 @@ class AuthUser {
       'academic_year': academicYear,
       'vibe': vibe,
       'favorite_playlist': favoritePlaylist,
+      'gender': gender,
       'student_email': studentEmail,
       'pending_student_email': pendingStudentEmail,
       'is_student_verified': isStudentVerified,

@@ -14,6 +14,7 @@ function sanitizeUser(user) {
     academic_year: user.academic_year,
     vibe: user.vibe,
     favorite_playlist: user.favorite_playlist,
+    gender: user.gender,
     student_email: user.student_email,
     pending_student_email: user.pending_student_email,
     is_student_verified: user.is_student_verified,
@@ -54,6 +55,7 @@ async function register(req, res) {
     academicYear,
     vibe,
     favoritePlaylist,
+    gender,
     isDriver,
     carMake,
     carModel,
@@ -71,6 +73,12 @@ async function register(req, res) {
     if (!carMake || !carModel || !carColor || !carPlateState || !carPlateNumber) {
       return res.status(400).json({
         error: 'Registered drivers must include car make, model, color, plate state, and plate number.',
+      });
+    }
+
+    if (!gender || !['male', 'female'].includes(String(gender).toLowerCase())) {
+      return res.status(400).json({
+        error: 'Registered drivers must set gender to male or female.',
       });
     }
   }
@@ -92,6 +100,7 @@ async function register(req, res) {
       academicYear: academicYear?.trim() || null,
       vibe: vibe?.trim() || null,
       favoritePlaylist: favoritePlaylist?.trim() || null,
+      gender: gender?.trim()?.toLowerCase() || null,
       isDriver: Boolean(isDriver),
       carMake: carMake?.trim() || null,
       carModel: carModel?.trim() || null,

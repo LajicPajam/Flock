@@ -68,6 +68,7 @@ class UiShell extends StatelessWidget {
     required this.child,
     this.actions = const [],
     this.floatingActionButton,
+    this.preferBrandLeading = false,
     /// When true, content uses 70–85% of viewport width for a more open layout (e.g. Available Trips).
     this.useWideLayout = false,
   });
@@ -76,15 +77,13 @@ class UiShell extends StatelessWidget {
   final Widget child;
   final List<Widget> actions;
   final Widget? floatingActionButton;
+  final bool preferBrandLeading;
   final bool useWideLayout;
 
   @override
   Widget build(BuildContext context) {
-    // #region agent log
     final width = MediaQuery.sizeOf(context).width;
-    final maxContentWidth = useWideLayout
-        ? (width * 0.85).clamp(760.0, double.infinity)
-        : 760.0;
+    final maxContentWidth = _contentWidthForViewport(width);
     debugLog(
       location: 'ui_shell.dart:UiShell.build',
       message: 'UiShell body build',
@@ -96,29 +95,22 @@ class UiShell extends StatelessWidget {
       hypothesisId: 'H1',
     );
     // #endregion
-    final canPop = Navigator.of(context).canPop();
+    final navigatorCanPop = Navigator.of(context).canPop();
+    final showBrandLeading = preferBrandLeading || !navigatorCanPop;
+    final leading = showBrandLeading
+        ? const _BrandLeading(key: ValueKey('brand-leading'))
+        : IconButton(
+            key: const ValueKey('back-leading'),
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            tooltip: 'Back',
+          );
 
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
         centerTitle: true,
-        leading: canPop
-            ? IconButton(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                tooltip: 'Back',
-              )
-            : Padding(
-                padding: const EdgeInsets.only(left: 12),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: const ImageIcon(
-                    AssetImage('assets/flock_icon.png'),
-                    size: 30,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+        leading: leading,
         leadingWidth: 58,
         title: Text(
           title,
@@ -131,9 +123,7 @@ class UiShell extends StatelessWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final w = useWideLayout
-                ? (constraints.maxWidth * 0.85).clamp(760.0, double.infinity)
-                : 760.0;
+            final w = _contentWidthForViewport(constraints.maxWidth);
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -148,6 +138,37 @@ class UiShell extends StatelessWidget {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  double _contentWidthForViewport(double viewportWidth) {
+    if (!useWideLayout) {
+      return viewportWidth >= 760 ? 760 : viewportWidth;
+    }
+
+    if (viewportWidth < 760) {
+      return viewportWidth;
+    }
+
+    return (viewportWidth * 0.85).clamp(760.0, viewportWidth);
+  }
+}
+
+class _BrandLeading extends StatelessWidget {
+  const _BrandLeading({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.only(left: 12),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ImageIcon(
+          AssetImage('assets/flock_icon.png'),
+          size: 30,
+          color: Colors.white,
         ),
       ),
     );

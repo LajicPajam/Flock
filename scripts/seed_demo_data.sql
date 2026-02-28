@@ -6,7 +6,10 @@
 \i migrations/003_reviews.sql
 \i migrations/004_trip_status.sql
 \i migrations/005_trip_history_notifications.sql
+\i migrations/006_passenger_profiles.sql
 \i migrations/006_trip_exact_locations.sql
+\i migrations/007_edu_verification.sql
+\i migrations/008_trip_events_and_driver_gender.sql
 
 -- Users
 INSERT INTO users (
@@ -29,7 +32,7 @@ VALUES
     'seed+brad@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '8015550101',
-    'https://placehold.co/200x200/png?text=BC',
+    'https://i.pravatar.cc/300?img=12',
     TRUE,
     'Toyota',
     'Highlander',
@@ -43,7 +46,7 @@ VALUES
     'seed+tessa@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '3855550102',
-    'https://placehold.co/200x200/png?text=TK',
+    'https://i.pravatar.cc/300?img=32',
     TRUE,
     'Honda',
     'CR-V',
@@ -57,7 +60,7 @@ VALUES
     'seed+noah@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '2085550103',
-    'https://placehold.co/200x200/png?text=NR',
+    'https://i.pravatar.cc/300?img=14',
     TRUE,
     'Subaru',
     'Outback',
@@ -71,7 +74,7 @@ VALUES
     'seed+emma@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '7205550104',
-    'https://placehold.co/200x200/png?text=EL',
+    'https://i.pravatar.cc/300?img=47',
     FALSE,
     NULL,
     NULL,
@@ -85,7 +88,7 @@ VALUES
     'seed+josh@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '6025550105',
-    'https://placehold.co/200x200/png?text=JP',
+    'https://i.pravatar.cc/300?img=53',
     FALSE,
     NULL,
     NULL,
@@ -99,7 +102,7 @@ VALUES
     'seed+mia@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '8015550106',
-    'https://placehold.co/200x200/png?text=MW',
+    'https://i.pravatar.cc/300?img=24',
     FALSE,
     NULL,
     NULL,
@@ -113,7 +116,7 @@ VALUES
     'seed+caleb@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '8015550107',
-    'https://placehold.co/200x200/png?text=CS',
+    'https://i.pravatar.cc/300?img=68',
     TRUE,
     'Ford',
     'Explorer',
@@ -127,7 +130,7 @@ VALUES
     'seed+sophie@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '3035550108',
-    'https://placehold.co/200x200/png?text=SC',
+    'https://i.pravatar.cc/300?img=28',
     FALSE,
     NULL,
     NULL,
@@ -141,7 +144,7 @@ VALUES
     'seed+liam@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '8015550109',
-    'https://placehold.co/200x200/png?text=LT',
+    'https://i.pravatar.cc/300?img=15',
     FALSE,
     NULL,
     NULL,
@@ -155,7 +158,7 @@ VALUES
     'seed+rachel@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '6025550110',
-    'https://placehold.co/200x200/png?text=RY',
+    'https://i.pravatar.cc/300?img=49',
     FALSE,
     NULL,
     NULL,
@@ -169,7 +172,7 @@ VALUES
     'seed+ethan@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '2085550111',
-    'https://placehold.co/200x200/png?text=EB',
+    'https://i.pravatar.cc/300?img=19',
     TRUE,
     'Chevrolet',
     'Tahoe',
@@ -183,7 +186,7 @@ VALUES
     'seed+olivia@flock.local',
     '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
     '7205550112',
-    'https://placehold.co/200x200/png?text=OH',
+    'https://i.pravatar.cc/300?img=5',
     FALSE,
     NULL,
     NULL,
@@ -197,6 +200,68 @@ ON CONFLICT (email) DO UPDATE SET
   password_hash = EXCLUDED.password_hash,
   phone_number = EXCLUDED.phone_number,
   profile_photo_url = EXCLUDED.profile_photo_url,
+  is_driver = EXCLUDED.is_driver,
+  car_make = EXCLUDED.car_make,
+  car_model = EXCLUDED.car_model,
+  car_color = EXCLUDED.car_color,
+  car_plate_state = EXCLUDED.car_plate_state,
+  car_plate_number = EXCLUDED.car_plate_number,
+  car_description = EXCLUDED.car_description;
+
+UPDATE users
+SET gender = CASE email
+  WHEN 'seed+brad@flock.local' THEN 'male'
+  WHEN 'seed+tessa@flock.local' THEN 'female'
+  WHEN 'seed+noah@flock.local' THEN 'male'
+  WHEN 'seed+emma@flock.local' THEN 'female'
+  WHEN 'seed+josh@flock.local' THEN 'male'
+  WHEN 'seed+mia@flock.local' THEN 'female'
+  WHEN 'seed+caleb@flock.local' THEN 'male'
+  WHEN 'seed+sophie@flock.local' THEN 'female'
+  WHEN 'seed+liam@flock.local' THEN 'male'
+  WHEN 'seed+rachel@flock.local' THEN 'female'
+  WHEN 'seed+ethan@flock.local' THEN 'male'
+  WHEN 'seed+olivia@flock.local' THEN 'female'
+  ELSE gender
+END
+WHERE email LIKE 'seed+%@flock.local';
+
+INSERT INTO users (
+  name,
+  email,
+  password_hash,
+  phone_number,
+  profile_photo_url,
+  gender,
+  is_driver,
+  car_make,
+  car_model,
+  car_color,
+  car_plate_state,
+  car_plate_number,
+  car_description
+)
+VALUES (
+  'Grace Holloway',
+  'seed+grace@flock.local',
+  '$2b$10$kq9HLM8pRWKEGDPbg2T/2eRR38v3z.E97ExEFso8HkekCUIyta7u6',
+  '4355550113',
+  'https://i.pravatar.cc/300?img=39',
+  'female',
+  TRUE,
+  'Kia',
+  'Sorento',
+  'Gray',
+  'UT',
+  'GRH-113',
+  'Usually heading south for weekend events and can fit a couple duffels.'
+)
+ON CONFLICT (email) DO UPDATE SET
+  name = EXCLUDED.name,
+  password_hash = EXCLUDED.password_hash,
+  phone_number = EXCLUDED.phone_number,
+  profile_photo_url = EXCLUDED.profile_photo_url,
+  gender = EXCLUDED.gender,
   is_driver = EXCLUDED.is_driver,
   car_make = EXCLUDED.car_make,
   car_model = EXCLUDED.car_model,
@@ -350,16 +415,16 @@ SELECT
   41.2230,
   -111.9738,
   NOW() + INTERVAL '4 days',
-  0,
-  'full',
+  2,
+  'open',
   'Student center parking lot.',
-  '[seed-demo] Rexburg to Ogden full'
+  '[seed-demo] Rexburg to Ogden'
 FROM users u
 WHERE u.email = 'seed+noah@flock.local'
   AND NOT EXISTS (
     SELECT 1 FROM trips t
     WHERE t.driver_id = u.id
-      AND t.notes = '[seed-demo] Rexburg to Ogden full'
+      AND t.notes IN ('[seed-demo] Rexburg to Ogden full', '[seed-demo] Rexburg to Ogden')
   );
 
 INSERT INTO trips (
@@ -596,6 +661,67 @@ WHERE u.email = 'seed+ethan@flock.local'
       AND t.notes = '[seed-demo] Pocatello to Salt Lake completed'
   );
 
+INSERT INTO trips (
+  driver_id,
+  origin_city,
+  destination_city,
+  origin_label,
+  destination_label,
+  origin_latitude,
+  origin_longitude,
+  destination_latitude,
+  destination_longitude,
+  departure_time,
+  seats_available,
+  status,
+  meeting_spot,
+  event_category,
+  event_name,
+  notes
+)
+SELECT
+  u.id,
+  'logan_ut',
+  'provo_ut',
+  'Logan, Utah',
+  'BYU Campus, Provo, Utah',
+  41.7369,
+  -111.8338,
+  40.2518,
+  -111.6493,
+  NOW() + INTERVAL '2 days 6 hours',
+  3,
+  'open',
+  'Meet at the Maverik just off Main Street in Logan.',
+  'Sport',
+  'BYU home game weekend',
+  '[seed-demo] Logan to BYU weekend ride'
+FROM users u
+WHERE u.email = 'seed+grace@flock.local'
+  AND NOT EXISTS (
+    SELECT 1 FROM trips t
+    WHERE t.driver_id = u.id
+      AND t.notes = '[seed-demo] Logan to BYU weekend ride'
+  );
+
+UPDATE trips
+SET
+  event_category = CASE notes
+    WHEN '[seed-demo] Lehi to Idaho Falls' THEN 'Sport'
+    WHEN '[seed-demo] Spanish Fork to Scottsdale road trip' THEN 'Sport'
+    WHEN '[seed-demo] Tempe to Flagstaff' THEN 'School Event'
+    WHEN '[seed-demo] Farmington to Moab' THEN 'Holiday'
+    ELSE event_category
+  END,
+  event_name = CASE notes
+    WHEN '[seed-demo] Lehi to Idaho Falls' THEN 'BYU vs Utah basketball game'
+    WHEN '[seed-demo] Spanish Fork to Scottsdale road trip' THEN 'ASU rivalry weekend'
+    WHEN '[seed-demo] Tempe to Flagstaff' THEN 'Student leadership retreat'
+    WHEN '[seed-demo] Farmington to Moab' THEN 'Spring break canyon trip'
+    ELSE event_name
+  END
+WHERE notes LIKE '[seed-demo]%';
+
 -- Ride requests
 INSERT INTO ride_requests (trip_id, rider_id, message, status)
 SELECT
@@ -610,12 +736,20 @@ ON CONFLICT (trip_id, rider_id) DO UPDATE SET
   message = EXCLUDED.message,
   status = EXCLUDED.status;
 
+UPDATE trips
+SET
+  status = 'open',
+  seats_available = GREATEST(seats_available, 2),
+  notes = REPLACE(notes, ' full', '')
+WHERE notes LIKE '[seed-demo]%'
+  AND (status = 'full' OR seats_available <= 0);
+
 INSERT INTO ride_requests (trip_id, rider_id, message, status)
 SELECT
   t.id,
   u.id,
   'I only need a lift as far as Farmington if that works.',
-  'pending'
+  'accepted'
 FROM trips t
 JOIN users u ON u.email = 'seed+josh@flock.local'
 WHERE t.notes = '[seed-demo] Lehi to Idaho Falls'
@@ -680,7 +814,7 @@ SELECT
   t.id,
   u.id,
   'I just need a seat to Twin Falls if that works.',
-  'pending'
+  'accepted'
 FROM trips t
 JOIN users u ON u.email = 'seed+rachel@flock.local'
 WHERE t.notes = '[seed-demo] Layton to Twin Falls'
@@ -823,6 +957,111 @@ FROM trips t
 JOIN users driver ON driver.email = 'seed+noah@flock.local'
 JOIN users rider ON rider.email = 'seed+mia@flock.local'
 WHERE t.notes = '[seed-demo] Brigham City to Idaho Falls completed'
+ON CONFLICT (trip_id, reviewer_id, reviewee_id) DO UPDATE SET
+  rating = EXCLUDED.rating,
+  comment = EXCLUDED.comment;
+
+INSERT INTO reviews (trip_id, reviewer_id, reviewee_id, rating, comment)
+SELECT
+  t.id,
+  driver.id,
+  rider.id,
+  5,
+  'Easy to coordinate with and right on time at pickup.'
+FROM trips t
+JOIN users driver ON driver.email = 'seed+brad@flock.local'
+JOIN users rider ON rider.email = 'seed+emma@flock.local'
+WHERE t.notes = '[seed-demo] Spanish Fork to Scottsdale road trip'
+ON CONFLICT (trip_id, reviewer_id, reviewee_id) DO UPDATE SET
+  rating = EXCLUDED.rating,
+  comment = EXCLUDED.comment;
+
+INSERT INTO reviews (trip_id, reviewer_id, reviewee_id, rating, comment)
+SELECT
+  t.id,
+  driver.id,
+  rider.id,
+  4,
+  'Friendly and flexible with meetup timing.'
+FROM trips t
+JOIN users driver ON driver.email = 'seed+tessa@flock.local'
+JOIN users rider ON rider.email = 'seed+josh@flock.local'
+WHERE t.notes = '[seed-demo] Lehi to Idaho Falls'
+ON CONFLICT (trip_id, reviewer_id, reviewee_id) DO UPDATE SET
+  rating = EXCLUDED.rating,
+  comment = EXCLUDED.comment;
+
+INSERT INTO reviews (trip_id, reviewer_id, reviewee_id, rating, comment)
+SELECT
+  t.id,
+  driver.id,
+  rider.id,
+  5,
+  'Great communication and ready exactly where he said he would be.'
+FROM trips t
+JOIN users driver ON driver.email = 'seed+caleb@flock.local'
+JOIN users rider ON rider.email = 'seed+liam@flock.local'
+WHERE t.notes = '[seed-demo] Provo to Amarillo long haul'
+ON CONFLICT (trip_id, reviewer_id, reviewee_id) DO UPDATE SET
+  rating = EXCLUDED.rating,
+  comment = EXCLUDED.comment;
+
+INSERT INTO reviews (trip_id, reviewer_id, reviewee_id, rating, comment)
+SELECT
+  t.id,
+  rider.id,
+  driver.id,
+  5,
+  'Super smooth pickup and drop-off, and the route updates were accurate.'
+FROM trips t
+JOIN users driver ON driver.email = 'seed+caleb@flock.local'
+JOIN users rider ON rider.email = 'seed+olivia@flock.local'
+WHERE t.notes = '[seed-demo] Farmington to Moab'
+ON CONFLICT (trip_id, reviewer_id, reviewee_id) DO UPDATE SET
+  rating = EXCLUDED.rating,
+  comment = EXCLUDED.comment;
+
+INSERT INTO reviews (trip_id, reviewer_id, reviewee_id, rating, comment)
+SELECT
+  t.id,
+  driver.id,
+  rider.id,
+  5,
+  'Clear communication and super easy to meet up with.'
+FROM trips t
+JOIN users driver ON driver.email = 'seed+caleb@flock.local'
+JOIN users rider ON rider.email = 'seed+olivia@flock.local'
+WHERE t.notes = '[seed-demo] Farmington to Moab'
+ON CONFLICT (trip_id, reviewer_id, reviewee_id) DO UPDATE SET
+  rating = EXCLUDED.rating,
+  comment = EXCLUDED.comment;
+
+INSERT INTO reviews (trip_id, reviewer_id, reviewee_id, rating, comment)
+SELECT
+  t.id,
+  rider.id,
+  driver.id,
+  4,
+  'Easy ride and good communication the whole way.'
+FROM trips t
+JOIN users driver ON driver.email = 'seed+ethan@flock.local'
+JOIN users rider ON rider.email = 'seed+rachel@flock.local'
+WHERE t.notes = '[seed-demo] Layton to Twin Falls'
+ON CONFLICT (trip_id, reviewer_id, reviewee_id) DO UPDATE SET
+  rating = EXCLUDED.rating,
+  comment = EXCLUDED.comment;
+
+INSERT INTO reviews (trip_id, reviewer_id, reviewee_id, rating, comment)
+SELECT
+  t.id,
+  driver.id,
+  rider.id,
+  5,
+  'Responsive, punctual, and easy to coordinate with.'
+FROM trips t
+JOIN users driver ON driver.email = 'seed+ethan@flock.local'
+JOIN users rider ON rider.email = 'seed+rachel@flock.local'
+WHERE t.notes = '[seed-demo] Layton to Twin Falls'
 ON CONFLICT (trip_id, reviewer_id, reviewee_id) DO UPDATE SET
   rating = EXCLUDED.rating,
   comment = EXCLUDED.comment;

@@ -66,6 +66,7 @@ class AppState extends ChangeNotifier {
     String? academicYear,
     String? vibe,
     String? favoritePlaylist,
+    String? gender,
     bool isDriver = false,
     String? carMake,
     String? carModel,
@@ -85,6 +86,7 @@ class AppState extends ChangeNotifier {
         academicYear: academicYear,
         vibe: vibe,
         favoritePlaylist: favoritePlaylist,
+        gender: gender,
         isDriver: isDriver,
         carMake: carMake,
         carModel: carModel,
@@ -115,6 +117,7 @@ class AppState extends ChangeNotifier {
     required String carPlateState,
     required String carPlateNumber,
     required String carDescription,
+    required String gender,
   }) async {
     final user = await _api.saveDriverProfile(
       token: _requireToken(),
@@ -124,6 +127,7 @@ class AppState extends ChangeNotifier {
       carPlateState: carPlateState,
       carPlateNumber: carPlateNumber,
       carDescription: carDescription,
+      gender: gender,
     );
     _currentUser = user;
     await _persistSession();
@@ -162,6 +166,8 @@ class AppState extends ChangeNotifier {
     required DateTime departureTime,
     required int seatsAvailable,
     required String meetingSpot,
+    String? eventCategory,
+    String? eventName,
     required String notes,
   }) async {
     await _api.createTrip(
@@ -177,6 +183,8 @@ class AppState extends ChangeNotifier {
       departureTime: departureTime,
       seatsAvailable: seatsAvailable,
       meetingSpot: meetingSpot,
+      eventCategory: eventCategory,
+      eventName: eventName,
       notes: notes,
     );
     await _refreshSignedInState();
@@ -195,6 +203,8 @@ class AppState extends ChangeNotifier {
     required DateTime departureTime,
     required int seatsAvailable,
     required String meetingSpot,
+    String? eventCategory,
+    String? eventName,
     required String notes,
   }) async {
     await _api.updateTrip(
@@ -211,6 +221,8 @@ class AppState extends ChangeNotifier {
       departureTime: departureTime,
       seatsAvailable: seatsAvailable,
       meetingSpot: meetingSpot,
+      eventCategory: eventCategory,
+      eventName: eventName,
       notes: notes,
     );
     await _refreshSignedInState();
@@ -336,6 +348,7 @@ class AppState extends ChangeNotifier {
     String? academicYear,
     String? vibe,
     String? favoritePlaylist,
+    String? gender,
     String? carMake,
     String? carModel,
     String? carColor,
@@ -352,6 +365,7 @@ class AppState extends ChangeNotifier {
       academicYear: academicYear,
       vibe: vibe,
       favoritePlaylist: favoritePlaylist,
+      gender: gender,
       carMake: carMake,
       carModel: carModel,
       carColor: carColor,

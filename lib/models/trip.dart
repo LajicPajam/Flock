@@ -39,10 +39,13 @@ class Trip {
     required this.seatsAvailable,
     required this.status,
     required this.meetingSpot,
+    this.eventCategory,
+    this.eventName,
     required this.notes,
     required this.driverName,
     required this.driverPhoneNumber,
     required this.driverProfilePhotoUrl,
+    this.driverGender,
     required this.driverIsStudentVerified,
     this.driverVerifiedSchoolName,
     required this.driverCarMake,
@@ -72,10 +75,13 @@ class Trip {
   final int seatsAvailable;
   final String status;
   final String meetingSpot;
+  final String? eventCategory;
+  final String? eventName;
   final String notes;
   final String driverName;
   final String driverPhoneNumber;
   final String driverProfilePhotoUrl;
+  final String? driverGender;
   final bool driverIsStudentVerified;
   final String? driverVerifiedSchoolName;
   final String driverCarMake;
@@ -93,6 +99,9 @@ class Trip {
   bool get isFull => status == 'full' || seatsAvailable <= 0;
   bool get isCancelled => status == 'cancelled';
   bool get isCompleted => status == 'completed';
+  bool get hasEvent =>
+      (eventName != null && eventName!.trim().isNotEmpty) ||
+      (eventCategory != null && eventCategory!.trim().isNotEmpty);
   String get originDisplayLabel =>
       (originLabel != null && originLabel!.trim().isNotEmpty)
       ? originLabel!
@@ -124,10 +133,13 @@ class Trip {
       seatsAvailable: json['seats_available'] as int,
       status: json['status'] as String? ?? 'open',
       meetingSpot: json['meeting_spot'] as String? ?? '',
+      eventCategory: json['event_category'] as String?,
+      eventName: json['event_name'] as String?,
       notes: json['notes'] as String? ?? '',
       driverName: json['driver_name'] as String? ?? 'Driver',
       driverPhoneNumber: json['driver_phone_number'] as String? ?? '',
       driverProfilePhotoUrl: json['driver_profile_photo_url'] as String? ?? '',
+      driverGender: json['driver_gender'] as String?,
       driverIsStudentVerified:
           json['driver_is_student_verified'] as bool? ?? false,
       driverVerifiedSchoolName: json['driver_verified_school_name'] as String?,
