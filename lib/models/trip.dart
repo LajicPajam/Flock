@@ -18,6 +18,7 @@ class Trip {
     required this.driverCarPlateState,
     required this.driverCarPlateNumber,
     required this.driverCarDescription,
+    this.driverCarbonSavedGrams = 0,
     this.viewerRequest,
     this.rideRequests = const [],
   });
@@ -38,6 +39,7 @@ class Trip {
   final String driverCarPlateState;
   final String driverCarPlateNumber;
   final String driverCarDescription;
+  final int driverCarbonSavedGrams;
   final RideRequest? viewerRequest;
   final List<RideRequest> rideRequests;
 
@@ -61,6 +63,7 @@ class Trip {
       driverCarPlateState: json['driver_car_plate_state'] as String? ?? '',
       driverCarPlateNumber: json['driver_car_plate_number'] as String? ?? '',
       driverCarDescription: json['driver_car_description'] as String? ?? '',
+      driverCarbonSavedGrams: json['driver_carbon_saved_grams'] as int? ?? 0,
       viewerRequest: json['viewer_request'] == null
           ? null
           : RideRequest.fromJson(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/city.dart';
 import '../models/trip.dart';
 import '../state/app_state.dart';
+import '../widgets/tier_badge.dart';
 import 'create_trip_screen.dart';
 import 'profile_screen.dart';
 import 'trip_detail_screen.dart';
@@ -107,7 +108,14 @@ class _TripCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Driver: ${trip.driverName}'),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                children: [
+                  Text('Driver: ${trip.driverName}'),
+                  TierBadge(carbonSavedGrams: trip.driverCarbonSavedGrams),
+                ],
+              ),
               Text('Leaves: ${trip.departureTime.toLocal()}'),
               Text('Seats: ${trip.seatsAvailable}'),
             ],

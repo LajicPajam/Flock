@@ -1,4 +1,5 @@
 const { getOptionalUser } = require('../middleware/auth');
+const { getCarbonSavedForUser, getCarbonSavedForUsers } = require('../models/carbon');
 const { isValidCity } = require('../models/cities');
 const { findUserById } = require('../models/users');
 const {
@@ -56,7 +57,13 @@ async function createTripHandler(req, res) {
 async function listTripsHandler(_req, res) {
   try {
     const trips = await listTrips();
-    return res.json(trips);
+    const driverIds = [...new Set(trips.map((t) => t.driver_id))];
+    const carbonMap = await getCarbonSavedForUsers(driverIds);
+    const enriched = trips.map((t) => ({
+      ...t,
+      driver_carbon_saved_grams: carbonMap[t.driver_id] || 0,
+    }));
+    return res.json(enriched);
   } catch (error) {
     return res.status(500).json({ error: 'Unable to load trips.' });
   }
@@ -80,8 +87,11 @@ async function getTripByIdHandler(req, res) {
       rideRequests = await listRideRequestsForTrip(trip.id);
     }
 
+    const driverCarbon = await getCarbonSavedForUser(trip.driver_id);
+
     return res.json({
       ...trip,
+      driver_carbon_saved_grams: driverCarbon.total_co2_saved_grams,
       viewer_request: viewerRequest,
       ride_requests: rideRequests,
     });

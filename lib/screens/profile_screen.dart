@@ -5,7 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/auth_user.dart';
+import '../models/carbon_stats.dart';
 import '../state/app_state.dart';
+import '../widgets/carbon_progress_bar.dart';
 import 'ui_shell.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -35,10 +37,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final user = context.read<AppState>().currentUser;
+    final appState = context.read<AppState>();
+    final user = appState.currentUser;
     if (user != null) {
       _populate(user);
     }
+    appState.loadCarbonStats();
   }
 
   @override
@@ -200,10 +204,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? NetworkImage(_profilePhotoUrl!)
               : null);
 
+    final carbonStats = context.watch<AppState>().carbonStats;
+
     return UiShell(
       title: 'Your Profile',
       child: ListView(
         children: [
+          if (carbonStats != null) ...[
+            _CarbonTrackerCard(stats: carbonStats),
+            const SizedBox(height: 12),
+          ],
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -323,6 +333,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CarbonTrackerCard extends StatelessWidget {
+  const _CarbonTrackerCard({required this.stats});
+
+  final CarbonStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final tl = stats.tierLevel;
+    final nextTierName = tl.tier.index < CarbonTier.values.length - 1
+        ? CarbonTier.values[tl.tier.index + 1].label
+        : null;
+    final gramsToNext = tl.tierEndGrams - stats.totalCo2SavedGrams;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Carbon Savings',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${stats.completedRides} ride${stats.completedRides == 1 ? '' : 's'} completed · '
+              '${stats.totalDistanceKm} km carpooled',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            CarbonProgressBar(stats: stats),
+            if (nextTierName != null && gramsToNext > 0) ...[
+              const SizedBox(height: 12),
+              Text(
+                '${(gramsToNext / 1000).toStringAsFixed(1)} kg more to reach $nextTierName tier',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

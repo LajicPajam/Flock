@@ -5,6 +5,7 @@ import '../models/city.dart';
 import '../models/trip.dart';
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
+import '../widgets/tier_badge.dart';
 import 'messages_screen.dart';
 import 'ui_shell.dart';
 
@@ -163,7 +164,17 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Driver: ${trip.driverName}'),
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 8,
+                                  children: [
+                                    Text('Driver: ${trip.driverName}'),
+                                    TierBadge(
+                                      carbonSavedGrams:
+                                          trip.driverCarbonSavedGrams,
+                                    ),
+                                  ],
+                                ),
                                 Text('Phone: ${trip.driverPhoneNumber}'),
                               ],
                             ),

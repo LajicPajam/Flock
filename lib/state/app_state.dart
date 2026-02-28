@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../models/auth_user.dart';
+import '../models/carbon_stats.dart';
 import '../models/trip.dart';
 import '../services/api.dart';
 
@@ -16,6 +17,7 @@ class AppState extends ChangeNotifier {
   List<Trip> _trips = [];
   bool _isLoading = false;
   String? _errorMessage;
+  CarbonStats? _carbonStats;
 
   bool get isAuthenticated => _token != null;
   bool get isLoading => _isLoading;
@@ -23,6 +25,7 @@ class AppState extends ChangeNotifier {
   AuthUser? get currentUser => _currentUser;
   String? get token => _token;
   List<Trip> get trips => _trips;
+  CarbonStats? get carbonStats => _carbonStats;
 
   void clearError() {
     _errorMessage = null;
@@ -178,6 +181,13 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<CarbonStats> loadCarbonStats() async {
+    final stats = await _api.fetchCarbonStats(token: _requireToken());
+    _carbonStats = stats;
+    notifyListeners();
+    return stats;
+  }
+
   Future<void> updateProfile({
     required String name,
     required String phoneNumber,
@@ -210,6 +220,7 @@ class AppState extends ChangeNotifier {
     _currentUser = null;
     _trips = [];
     _errorMessage = null;
+    _carbonStats = null;
     notifyListeners();
   }
 

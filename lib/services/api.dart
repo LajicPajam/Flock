@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import '../models/auth_user.dart';
+import '../models/carbon_stats.dart';
 import '../models/chat_message.dart';
 import '../models/trip.dart';
 
@@ -344,6 +345,16 @@ class ApiService {
     );
 
     _decode(response);
+  }
+
+  Future<CarbonStats> fetchCarbonStats({required String token}) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/me/carbon-stats'),
+      headers: _headers(token),
+    );
+
+    final data = _decode(response) as Map<String, dynamic>;
+    return CarbonStats.fromJson(data);
   }
 
   ApiResult _parseAuthResult(http.Response response) {
