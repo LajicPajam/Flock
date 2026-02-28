@@ -1,12 +1,12 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/auth_user.dart';
 import '../models/carbon_stats.dart';
 import '../state/app_state.dart';
+import '../utils/phone_formatter.dart';
 import '../widgets/carbon_progress_bar.dart';
 import 'user_reviews_screen.dart';
 import 'ui_shell.dart';
@@ -61,7 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _populate(AuthUser user) {
     _nameController.text = user.name;
-    _phoneController.text = user.phoneNumber;
+    _phoneController.text = formatPhoneNumber(user.phoneNumber);
     _carMakeController.text = user.carMake ?? '';
     _carModelController.text = user.carModel ?? '';
     _carColorController.text = user.carColor ?? '';
@@ -134,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       await appState.updateProfile(
         name: _nameController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
+        phoneNumber: digitsOnlyPhone(_phoneController.text),
         profilePhotoUrl: photoUrl,
         carMake: hasAllDriverFields ? driverFields[0] : null,
         carModel: hasAllDriverFields ? driverFields[1] : null,
@@ -175,10 +175,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildField({
     required TextEditingController controller,
     required String label,
+    List<TextInputFormatter>? inputFormatters,
+    TextInputType? keyboardType,
     int maxLines = 1,
   }) {
     return TextFormField(
       controller: controller,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
@@ -278,6 +282,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildField(
                       controller: _phoneController,
                       label: 'Phone Number',
+                      keyboardType: TextInputType.phone,
+                      inputFormatters: [UsPhoneTextInputFormatter()],
                     ),
                     const SizedBox(height: 20),
                     Text(
@@ -377,9 +383,9 @@ class _CarbonTrackerCard extends StatelessWidget {
           children: [
             Text(
               'Carbon Savings',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
@@ -393,9 +399,9 @@ class _CarbonTrackerCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 '${(gramsToNext / 1000).toStringAsFixed(1)} kg more to reach $nextTierName tier',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
               ),
             ],
           ],

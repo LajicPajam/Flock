@@ -11,6 +11,6 @@ void main() {
 
     expect(find.text('Sign In'), findsWidgets);
     expect(find.text('Flock Carpool'), findsOneWidget);
-    expect(find.text('Create an account'), findsOneWidget);
+    expect(find.text('New here? Create an account'), findsOneWidget);
   });
 }

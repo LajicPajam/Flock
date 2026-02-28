@@ -32,6 +32,7 @@ class AppState extends ChangeNotifier {
   );
   bool _isLoading = false;
   bool _isReady = false;
+  bool _shouldShowWelcomeTour = false;
   String? _errorMessage;
   CarbonStats? _carbonStats;
 
@@ -83,6 +84,7 @@ class AppState extends ChangeNotifier {
       );
       _token = result.token;
       _currentUser = result.user;
+      _shouldShowWelcomeTour = true;
       await _persistSession();
       await _refreshSignedInState();
     });
@@ -341,12 +343,22 @@ class AppState extends ChangeNotifier {
       notifications: const [],
       unreadCount: 0,
     );
+    _shouldShowWelcomeTour = false;
     _errorMessage = null;
     _carbonStats = null;
     _clearPersistedSession();
     _carbonStats = null;
     _clearPersistedSession();
     notifyListeners();
+  }
+
+  bool consumePendingWelcomeTour() {
+    if (!_shouldShowWelcomeTour) {
+      return false;
+    }
+
+    _shouldShowWelcomeTour = false;
+    return true;
   }
 
   String _requireToken() {

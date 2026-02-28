@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
+import '../theme/app_colors.dart';
+import '../utils/phone_formatter.dart';
 import 'settings_screen.dart';
 import 'ui_shell.dart';
 
@@ -97,7 +99,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      phoneNumber: _phoneController.text.trim(),
+      phoneNumber: digitsOnlyPhone(_phoneController.text),
       profilePhotoUrl: profilePhotoUrl,
     );
 
@@ -142,22 +144,79 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ],
       child: ListView(
         children: [
-          const SizedBox(height: 16),
-          Center(
-            child: Image.asset(
-              'assets/flock_logo.png',
-              height: 60,
-              fit: BoxFit.contain,
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF9FDDEB), Color(0xFFD8F3DC)],
+              ),
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.88),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.person_add_alt_1_rounded,
+                    color: AppColors.primaryGreen,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Image.asset(
+                  'assets/flock_logo.png',
+                  height: 30,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Create your rider profile.',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'It only takes a minute. After signup, we will give you a quick walkthrough so the app makes sense right away.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppColors.textInk.withValues(alpha: 0.74),
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(22),
               child: Form(
                 key: _formKey,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'Account Details',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Use a clear profile photo so drivers and riders can recognize you.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textInk.withValues(alpha: 0.66),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
                     TextFormField(
                       controller: _nameController,
                       decoration: const InputDecoration(
@@ -196,6 +255,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      inputFormatters: [UsPhoneTextInputFormatter()],
                       decoration: const InputDecoration(
                         labelText: 'Phone Number',
                         border: OutlineInputBorder(),
@@ -215,9 +276,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 8),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          radius: 28,
+                          radius: 30,
                           backgroundImage: _photoBytes == null
                               ? null
                               : MemoryImage(_photoBytes!),
@@ -231,7 +293,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             onPressed: _uploadingPhoto ? null : _pickPhoto,
                             icon: const Icon(Icons.photo_library_outlined),
                             label: Text(
-                              _photoName == null ? 'Choose Photo' : _photoName!,
+                              _photoName == null ? 'Upload Photo' : _photoName!,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),

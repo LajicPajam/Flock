@@ -13,6 +13,7 @@ import 'profile_screen.dart';
 import 'settings_screen.dart';
 import 'trip_detail_screen.dart';
 import 'ui_shell.dart';
+import 'welcome_tour_screen.dart';
 
 class TripListScreen extends StatefulWidget {
   const TripListScreen({super.key});
@@ -34,6 +35,14 @@ class _TripListScreenState extends State<TripListScreen> {
       appState.loadTrips();
       appState.loadActivity();
       appState.loadNotifications();
+      if (appState.consumePendingWelcomeTour()) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const WelcomeTourScreen(),
+            fullscreenDialog: true,
+          ),
+        );
+      }
     });
   }
 
@@ -303,9 +312,10 @@ class _TripListScreenState extends State<TripListScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 18),
                   if (filteredTrips.isEmpty)
                     const Padding(
-                      padding: EdgeInsets.only(top: 32),
+                      padding: EdgeInsets.only(top: 20),
                       child: Center(
                         child: Text('No trips match your selected route.'),
                       ),
@@ -314,7 +324,7 @@ class _TripListScreenState extends State<TripListScreen> {
                     ...List.generate(filteredTrips.length, (index) {
                       final trip = filteredTrips[index];
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.only(bottom: 16),
                         child: _TripCard(trip: trip),
                       );
                     }),
@@ -330,46 +340,176 @@ class _TripCard extends StatelessWidget {
 
   final Trip trip;
 
+  String _formatDeparture(DateTime value) {
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    final local = value.toLocal();
+    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final period = local.hour >= 12 ? 'PM' : 'AM';
+
+    return '${weekdays[local.weekday - 1]}, ${months[local.month - 1]} ${local.day} • $hour:$minute $period';
+  }
+
   @override
   Widget build(BuildContext context) {
     final origin = CollegeCity.fromApiValue(trip.originCity);
     final destination = CollegeCity.fromApiValue(trip.destinationCity);
 
     return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: AppColors.subtleBorder),
+      ),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        title: Text('${origin.label} -> ${destination.label}'),
+        contentPadding: const EdgeInsets.all(18),
+        title: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    origin.label,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    destination.label,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textInk.withValues(alpha: 0.72),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.secondaryGreen,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Icon(
+                Icons.arrow_forward_rounded,
+                color: AppColors.primaryGreen,
+              ),
+            ),
+          ],
+        ),
         subtitle: Padding(
-          padding: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.only(top: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
+              Row(
                 children: [
-                  Text('Driver: ${trip.driverName}'),
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AppColors.secondaryGreen,
+                    child: Text(
+                      trip.driverName.trim().isEmpty
+                          ? '?'
+                          : trip.driverName.trim()[0].toUpperCase(),
+                      style: const TextStyle(
+                        color: AppColors.primaryGreen,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      trip.driverName,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                   TierBadge(carbonSavedGrams: trip.driverCarbonSavedGrams),
                   if (trip.status != 'open') _StatusChip(status: trip.status),
                 ],
               ),
+              const SizedBox(height: 10),
               Text(
                 trip.driverReviewCount == 0
-                    ? 'New driver'
-                    : 'Rating: ${trip.driverAverageRating.toStringAsFixed(1)} (${trip.driverReviewCount})',
+                    ? 'Fresh driver profile'
+                    : 'Rated ${trip.driverAverageRating.toStringAsFixed(1)} • ${trip.driverReviewCount} reviews',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textInk.withValues(alpha: 0.66),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              Text('Leaves: ${formatDepartureTime(trip.departureTime)}'),
-              Text('Seats: ${trip.seatsAvailable}'),
+              const SizedBox(height: 12),
+              Wrap(
+                runSpacing: 8,
+                spacing: 8,
+                children: [
+                  _InfoPill(
+                    icon: Icons.schedule_outlined,
+                    label: _formatDeparture(trip.departureTime),
+                  ),
+                  _InfoPill(
+                    icon: Icons.event_seat_outlined,
+                    label:
+                        '${trip.seatsAvailable} seat${trip.seatsAvailable == 1 ? '' : 's'}',
+                  ),
+                ],
+              ),
+              if (trip.meetingSpot.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(
+                        Icons.place_outlined,
+                        size: 16,
+                        color: AppColors.primaryGreen,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        trip.meetingSpot,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textInk.withValues(alpha: 0.74),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _StatusChip(status: trip.status),
+                  const Spacer(),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
             ],
           ),
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _StatusChip(status: trip.status),
-            const SizedBox(height: 8),
-            const Icon(Icons.chevron_right),
-          ],
         ),
         onTap: () {
           Navigator.of(context).push(
@@ -378,6 +518,43 @@ class _TripCard extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.canvasBackground,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.subtleBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppColors.primaryGreen),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textInk.withValues(alpha: 0.78),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -453,11 +630,7 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         status.toUpperCase(),
-        style: TextStyle(
-          color: fg,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
+        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700),
       ),
     );
   }

@@ -35,15 +35,31 @@ class MyApp extends StatelessWidget {
           appBarTheme: const AppBarTheme(
             backgroundColor: AppColors.primaryGreen,
             foregroundColor: Colors.white,
+            elevation: 0,
           ),
           cardTheme: const CardThemeData(
             color: AppColors.cardBackground,
             surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(22)),
+              side: BorderSide(color: AppColors.subtleBorder),
+            ),
           ),
           filledButtonTheme: FilledButtonThemeData(
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primaryAccent,
               foregroundColor: Colors.white,
+              elevation: 2,
+              shadowColor: Color(0x223A86FF),
+              minimumSize: const Size.fromHeight(54),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+              shape: const StadiumBorder(),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           floatingActionButtonTheme: const FloatingActionButtonThemeData(
@@ -71,12 +87,30 @@ class MyApp extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primaryGreen,
               side: const BorderSide(color: AppColors.primaryGreen),
+              minimumSize: const Size.fromHeight(52),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              shape: const StadiumBorder(),
+              textStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           inputDecorationTheme: const InputDecorationTheme(
             filled: true,
             fillColor: Colors.white,
-            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+              borderSide: BorderSide(color: AppColors.subtleBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+              borderSide: BorderSide(color: AppColors.primaryGreen, width: 1.4),
+            ),
           ),
           useMaterial3: true,
         ),
