@@ -33,6 +33,13 @@ class _TripListScreenState extends State<TripListScreen> {
       title: 'Available Trips',
       actions: [
         IconButton(
+          onPressed: () {
+            Navigator.of(context).pushNamed('/leaderboard');
+          },
+          icon: const Icon(Icons.leaderboard),
+          tooltip: 'Leaderboard',
+        ),
+        IconButton(
           onPressed: () async {
             final appState = context.read<AppState>();
             await Navigator.of(context).push(

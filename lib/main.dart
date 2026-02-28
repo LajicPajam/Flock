@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'screens/leaderboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/trip_list_screen.dart';
 import 'state/app_state.dart';
@@ -80,6 +81,9 @@ class MyApp extends StatelessWidget {
           ),
           useMaterial3: true,
         ),
+        routes: {
+          '/leaderboard': (_) => const LeaderboardScreen(),
+        },
         home: Consumer<AppState>(
           builder: (context, appState, _) {
             if (appState.isAuthenticated) {
