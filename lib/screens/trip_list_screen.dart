@@ -7,6 +7,7 @@ import '../state/app_state.dart';
 import '../theme/app_colors.dart';
 import '../widgets/tier_badge.dart';
 import 'create_trip_screen.dart';
+import 'map_picker_screen.dart';
 import 'my_activity_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
@@ -24,8 +25,10 @@ class TripListScreen extends StatefulWidget {
 }
 
 class _TripListScreenState extends State<TripListScreen> {
-  CollegeCity? _originFilter;
-  CollegeCity? _destinationFilter;
+  static const _routeCorridorKm = 80.0;
+
+  LocationSelection? _originFilter;
+  LocationSelection? _destinationFilter;
   DateTime? _departureDateFilter;
 
   @override
@@ -52,15 +55,11 @@ class _TripListScreenState extends State<TripListScreen> {
       if (trip.isHistory) {
         return false;
       }
-      final matchesOrigin =
-          _originFilter == null || trip.originCity == _originFilter!.apiValue;
-      final matchesDestination =
-          _destinationFilter == null ||
-          trip.destinationCity == _destinationFilter!.apiValue;
+      final matchesRoute = _matchesRequestedRoute(trip);
       final matchesDepartureDate =
           _departureDateFilter == null ||
           _isSameDay(trip.departureTime.toLocal(), _departureDateFilter!);
-      return matchesOrigin && matchesDestination && matchesDepartureDate;
+      return matchesRoute && matchesDepartureDate;
     }).toList();
   }
 
@@ -68,6 +67,83 @@ class _TripListScreenState extends State<TripListScreen> {
     return left.year == right.year &&
         left.month == right.month &&
         left.day == right.day;
+  }
+
+  bool _matchesRequestedRoute(Trip trip) {
+    if (_originFilter == null && _destinationFilter == null) {
+      return true;
+    }
+
+    if (trip.originLatitude == null ||
+        trip.originLongitude == null ||
+        trip.destinationLatitude == null ||
+        trip.destinationLongitude == null) {
+      final matchesOrigin =
+          _originFilter == null || trip.originCity == _originFilter!.apiValue;
+      final matchesDestination =
+          _destinationFilter == null ||
+          trip.destinationCity == _destinationFilter!.apiValue;
+      return matchesOrigin && matchesDestination;
+    }
+
+    final startLat = trip.originLatitude!;
+    final startLng = trip.originLongitude!;
+    final endLat = trip.destinationLatitude!;
+    final endLng = trip.destinationLongitude!;
+
+    double? originFraction;
+    if (_originFilter != null) {
+      final originDistance = CollegeCity.distanceKmToSegment(
+        pointLatitude: _originFilter!.latitude,
+        pointLongitude: _originFilter!.longitude,
+        segmentStartLatitude: startLat,
+        segmentStartLongitude: startLng,
+        segmentEndLatitude: endLat,
+        segmentEndLongitude: endLng,
+      );
+      if (originDistance > _routeCorridorKm) {
+        return false;
+      }
+      originFraction = CollegeCity.segmentFractionForPoint(
+        pointLatitude: _originFilter!.latitude,
+        pointLongitude: _originFilter!.longitude,
+        segmentStartLatitude: startLat,
+        segmentStartLongitude: startLng,
+        segmentEndLatitude: endLat,
+        segmentEndLongitude: endLng,
+      );
+    }
+
+    double? destinationFraction;
+    if (_destinationFilter != null) {
+      final destinationDistance = CollegeCity.distanceKmToSegment(
+        pointLatitude: _destinationFilter!.latitude,
+        pointLongitude: _destinationFilter!.longitude,
+        segmentStartLatitude: startLat,
+        segmentStartLongitude: startLng,
+        segmentEndLatitude: endLat,
+        segmentEndLongitude: endLng,
+      );
+      if (destinationDistance > _routeCorridorKm) {
+        return false;
+      }
+      destinationFraction = CollegeCity.segmentFractionForPoint(
+        pointLatitude: _destinationFilter!.latitude,
+        pointLongitude: _destinationFilter!.longitude,
+        segmentStartLatitude: startLat,
+        segmentStartLongitude: startLng,
+        segmentEndLatitude: endLat,
+        segmentEndLongitude: endLng,
+      );
+    }
+
+    if (originFraction != null &&
+        destinationFraction != null &&
+        originFraction > destinationFraction) {
+      return false;
+    }
+
+    return true;
   }
 
   String _dateLabel(DateTime value) {
@@ -102,6 +178,47 @@ class _TripListScreenState extends State<TripListScreen> {
 
     setState(() {
       _departureDateFilter = selectedDate;
+    });
+  }
+
+  Future<void> _pickOriginOnMap() async {
+    final selection = await Navigator.of(context).push<LocationSelection>(
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          title: 'Pick Starting Area',
+          initialSelection:
+              _originFilter ?? LocationSelection.fromCity(CollegeCity.denverCo),
+        ),
+      ),
+    );
+
+    if (selection == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _originFilter = selection;
+    });
+  }
+
+  Future<void> _pickDestinationOnMap() async {
+    final selection = await Navigator.of(context).push<LocationSelection>(
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          title: 'Pick Destination Area',
+          initialSelection:
+              _destinationFilter ??
+              LocationSelection.fromCity(CollegeCity.chicagoIl),
+        ),
+      ),
+    );
+
+    if (selection == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _destinationFilter = selection;
     });
   }
 
@@ -233,62 +350,18 @@ class _TripListScreenState extends State<TripListScreen> {
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<CollegeCity?>(
-                            initialValue: _originFilter,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Starting City',
-                              border: OutlineInputBorder(),
-                            ),
-                            items: [
-                              const DropdownMenuItem<CollegeCity?>(
-                                value: null,
-                                child: Text('Any origin'),
-                              ),
-                              ...CollegeCity.values.map(
-                                (city) => DropdownMenuItem<CollegeCity?>(
-                                  value: city,
-                                  child: Text(
-                                    city.label,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            onChanged: (value) {
-                              setState(() {
-                                _originFilter = value;
-                              });
-                            },
+                          _FilterMapButton(
+                            label: 'Starting Area',
+                            value: _originFilter?.label ?? 'Anywhere',
+                            icon: Icons.trip_origin,
+                            onPressed: _pickOriginOnMap,
                           ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<CollegeCity?>(
-                            initialValue: _destinationFilter,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Destination City',
-                              border: OutlineInputBorder(),
-                            ),
-                            items: [
-                              const DropdownMenuItem<CollegeCity?>(
-                                value: null,
-                                child: Text('Any destination'),
-                              ),
-                              ...CollegeCity.values.map(
-                                (city) => DropdownMenuItem<CollegeCity?>(
-                                  value: city,
-                                  child: Text(
-                                    city.label,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            onChanged: (value) {
-                              setState(() {
-                                _destinationFilter = value;
-                              });
-                            },
+                          _FilterMapButton(
+                            label: 'Destination Area',
+                            value: _destinationFilter?.label ?? 'Anywhere',
+                            icon: Icons.location_on_outlined,
+                            onPressed: _pickDestinationOnMap,
                           ),
                           const SizedBox(height: 12),
                           SizedBox(
@@ -377,9 +450,6 @@ class _TripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final origin = CollegeCity.fromApiValue(trip.originCity);
-    final destination = CollegeCity.fromApiValue(trip.destinationCity);
-
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -397,14 +467,14 @@ class _TripCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    origin.label,
+                    trip.originDisplayLabel,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    destination.label,
+                    trip.destinationDisplayLabel,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.textInk.withValues(alpha: 0.72),
                     ),
@@ -616,7 +686,65 @@ class _InfoPill extends StatelessWidget {
   }
 }
 
-enum _TripMenuAction { activity, notifications, profile, settings, logout }
+class _FilterMapButton extends StatelessWidget {
+  const _FilterMapButton({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onPressed,
+      child: Ink(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.subtleBorder),
+          color: Colors.white,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primaryGreen),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.textInk.withValues(alpha: 0.66),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.map_outlined, color: AppColors.primaryGreen),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _MenuRow extends StatelessWidget {
   const _MenuRow({required this.icon, required this.label, this.count = 0});

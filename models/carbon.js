@@ -1,27 +1,41 @@
 const db = require('../db');
-
-// Approximate driving distances in km between supported city pairs
-const CITY_DISTANCES_KM = {
-  'provo_ut:logan_ut': 217,
-  'provo_ut:salt_lake_city_ut': 72,
-  'provo_ut:rexburg_id': 443,
-  'provo_ut:tempe_az': 1062,
-  'logan_ut:salt_lake_city_ut': 132,
-  'logan_ut:rexburg_id': 257,
-  'logan_ut:tempe_az': 1255,
-  'salt_lake_city_ut:rexburg_id': 346,
-  'salt_lake_city_ut:tempe_az': 1014,
-  'rexburg_id:tempe_az': 1400,
-};
+const { getCityByValue } = require('./cities');
 
 const CO2_GRAMS_PER_KM = 110;
+const EARTH_RADIUS_KM = 6371;
+const DRIVING_DISTANCE_MULTIPLIER = 1.18;
+
+function toRadians(degrees) {
+  return (degrees * Math.PI) / 180;
+}
 
 function getDistanceKm(origin, destination) {
-  return (
-    CITY_DISTANCES_KM[`${origin}:${destination}`] ||
-    CITY_DISTANCES_KM[`${destination}:${origin}`] ||
-    0
-  );
+  if (origin === destination) {
+    return 0;
+  }
+
+  const from = getCityByValue(origin);
+  const to = getCityByValue(destination);
+
+  if (!from || !to) {
+    return 0;
+  }
+
+  const latitudeDelta = toRadians(to.latitude - from.latitude);
+  const longitudeDelta = toRadians(to.longitude - from.longitude);
+  const fromLatitude = toRadians(from.latitude);
+  const toLatitude = toRadians(to.latitude);
+
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(fromLatitude) *
+      Math.cos(toLatitude) *
+      Math.sin(longitudeDelta / 2) ** 2;
+
+  const straightLineKm =
+    2 * EARTH_RADIUS_KM * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+
+  return Math.round(straightLineKm * DRIVING_DISTANCE_MULTIPLIER);
 }
 
 /**

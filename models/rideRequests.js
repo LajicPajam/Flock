@@ -87,6 +87,12 @@ async function listRideRequestsForRider(riderId) {
        t.driver_id,
        t.origin_city,
        t.destination_city,
+       t.origin_label,
+       t.destination_label,
+       t.origin_latitude,
+       t.origin_longitude,
+       t.destination_latitude,
+       t.destination_longitude,
        t.departure_time,
        t.meeting_spot,
        t.seats_available,
@@ -124,6 +130,8 @@ async function listPendingIncomingRequestsForDriver(driverId) {
        rr.created_at,
        t.origin_city,
        t.destination_city,
+       t.origin_label,
+       t.destination_label,
        t.departure_time,
        u.name AS rider_name
      FROM ride_requests rr
@@ -148,6 +156,8 @@ async function listRiderDecisionUpdates(riderId) {
        rr.created_at,
        t.origin_city,
        t.destination_city,
+       t.origin_label,
+       t.destination_label,
        t.departure_time,
        t.status AS trip_status,
        u.name AS driver_name

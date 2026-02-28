@@ -5,6 +5,7 @@ import '../models/city.dart';
 import '../models/trip.dart';
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
+import 'map_picker_screen.dart';
 import 'ui_shell.dart';
 
 class CreateTripScreen extends StatefulWidget {
@@ -28,8 +29,10 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   final _carPlateStateController = TextEditingController();
   final _carPlateNumberController = TextEditingController();
   final _carDescriptionController = TextEditingController();
-  CollegeCity _origin = CollegeCity.provoUt;
-  CollegeCity _destination = CollegeCity.loganUt;
+  LocationSelection _origin = LocationSelection.fromCity(CollegeCity.provoUt);
+  LocationSelection _destination = LocationSelection.fromCity(
+    CollegeCity.loganUt,
+  );
   DateTime _departure = DateTime.now().add(const Duration(days: 1));
   bool _saving = false;
   bool _savingDriverProfile = false;
@@ -67,8 +70,23 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     super.initState();
     final existingTrip = widget.existingTrip;
     if (existingTrip != null) {
-      _origin = CollegeCity.fromApiValue(existingTrip.originCity);
-      _destination = CollegeCity.fromApiValue(existingTrip.destinationCity);
+      final originCity = CollegeCity.fromApiValue(existingTrip.originCity);
+      final destinationCity = CollegeCity.fromApiValue(
+        existingTrip.destinationCity,
+      );
+      _origin = LocationSelection(
+        city: originCity,
+        label: existingTrip.originDisplayLabel,
+        latitude: existingTrip.originLatitude ?? originCity.latitude,
+        longitude: existingTrip.originLongitude ?? originCity.longitude,
+      );
+      _destination = LocationSelection(
+        city: destinationCity,
+        label: existingTrip.destinationDisplayLabel,
+        latitude: existingTrip.destinationLatitude ?? destinationCity.latitude,
+        longitude:
+            existingTrip.destinationLongitude ?? destinationCity.longitude,
+      );
       _departure = existingTrip.departureTime.toLocal();
       _seatsController.text = existingTrip.seatsAvailable.toString();
       _meetingSpotController.text = existingTrip.meetingSpot;
@@ -122,12 +140,57 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     });
   }
 
+  Future<void> _pickOriginOnMap() async {
+    final selection = await Navigator.of(context).push<LocationSelection>(
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          title: 'Pick Starting Point',
+          initialSelection: _origin,
+        ),
+      ),
+    );
+
+    if (selection == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _origin = selection;
+    });
+  }
+
+  Future<void> _pickDestinationOnMap() async {
+    final selection = await Navigator.of(context).push<LocationSelection>(
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          title: 'Pick Destination',
+          initialSelection: _destination,
+        ),
+      ),
+    );
+
+    if (selection == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _destination = selection;
+    });
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    if (_origin == _destination) {
+    if (_origin.apiValue == _destination.apiValue &&
+        CollegeCity.distanceKmBetween(
+              _origin.latitude,
+              _origin.longitude,
+              _destination.latitude,
+              _destination.longitude,
+            ) <
+            1) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Origin and destination must be different.'),
@@ -147,6 +210,12 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
           tripId: widget.existingTrip!.id,
           originCity: _origin.apiValue,
           destinationCity: _destination.apiValue,
+          originLabel: _origin.label,
+          destinationLabel: _destination.label,
+          originLatitude: _origin.latitude,
+          originLongitude: _origin.longitude,
+          destinationLatitude: _destination.latitude,
+          destinationLongitude: _destination.longitude,
           departureTime: _departure,
           seatsAvailable: int.parse(_seatsController.text),
           meetingSpot: _meetingSpotController.text.trim(),
@@ -156,6 +225,12 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
         await appState.createTrip(
           originCity: _origin.apiValue,
           destinationCity: _destination.apiValue,
+          originLabel: _origin.label,
+          destinationLabel: _destination.label,
+          originLatitude: _origin.latitude,
+          originLongitude: _origin.longitude,
+          destinationLatitude: _destination.latitude,
+          destinationLongitude: _destination.longitude,
           departureTime: _departure,
           seatsAvailable: int.parse(_seatsController.text),
           meetingSpot: _meetingSpotController.text.trim(),
@@ -356,88 +431,18 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<CollegeCity>(
-                            initialValue: _origin,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Origin',
-                              border: OutlineInputBorder(),
-                            ),
-                            selectedItemBuilder: (context) {
-                              return CollegeCity.values
-                                  .map(
-                                    (city) => Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        city.label,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  )
-                                  .toList();
-                            },
-                            items: CollegeCity.values
-                                .map(
-                                  (city) => DropdownMenuItem(
-                                    value: city,
-                                    child: Text(
-                                      city.label,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _origin = value;
-                                });
-                              }
-                            },
+                          _MapFieldButton(
+                            label: 'Origin',
+                            value: _origin.label,
+                            icon: Icons.trip_origin,
+                            onPressed: _pickOriginOnMap,
                           ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<CollegeCity>(
-                            initialValue: _destination,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Destination',
-                              border: OutlineInputBorder(),
-                            ),
-                            selectedItemBuilder: (context) {
-                              return CollegeCity.values
-                                  .map(
-                                    (city) => Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        city.label,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  )
-                                  .toList();
-                            },
-                            items: CollegeCity.values
-                                .map(
-                                  (city) => DropdownMenuItem(
-                                    value: city,
-                                    child: Text(
-                                      city.label,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _destination = value;
-                                });
-                              }
-                            },
+                          _MapFieldButton(
+                            label: 'Destination',
+                            value: _destination.label,
+                            icon: Icons.location_on_outlined,
+                            onPressed: _pickDestinationOnMap,
                           ),
                           const SizedBox(height: 12),
                           SizedBox(
@@ -521,6 +526,66 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MapFieldButton extends StatelessWidget {
+  const _MapFieldButton({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onPressed,
+      child: Ink(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.subtleBorder),
+          color: Colors.white,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primaryGreen),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.textInk.withValues(alpha: 0.66),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.map_outlined, color: AppColors.primaryGreen),
+          ],
+        ),
       ),
     );
   }

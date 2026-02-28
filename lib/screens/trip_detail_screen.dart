@@ -235,10 +235,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               trip.driverCarModel.isNotEmpty ||
               trip.driverCarPlateNumber.isNotEmpty;
 
+          final estimatedArrival = _estimateArrival(trip);
           final origin = CollegeCity.fromApiValue(trip.originCity);
           final destination = CollegeCity.fromApiValue(trip.destinationCity);
-          final estimatedArrival = _estimateArrival(trip);
-
           return ListView(
             children: [
               Card(
@@ -251,7 +250,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              origin.label,
+                              trip.originDisplayLabel,
                               style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(fontWeight: FontWeight.w700),
                             ),
@@ -271,7 +270,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              destination.label,
+                              trip.destinationDisplayLabel,
                               textAlign: TextAlign.right,
                               style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(fontWeight: FontWeight.w700),
@@ -283,8 +282,6 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                       Text('Departure: ${formatDepartureTime(trip.departureTime)}'),
                       Text(
                         'Estimated arrival: ${formatDepartureTime(estimatedArrival)}',
-                      Text(
-                        'Departure: ${formatDepartureTime(trip.departureTime)}',
                       ),
                       Text('Seats available: ${trip.seatsAvailable}'),
                       Text('Status: ${trip.status.toUpperCase()}'),

@@ -13,14 +13,77 @@ const {
   listRideRequestsForTrip,
   findViewerRequest,
   autoCompleteExpiredTrips,
-  setTripStatus,
 } = require('../models/trips');
 const { createNotification } = require('../models/notifications');
+
+function validatePinnedLocations({
+  originCity,
+  destinationCity,
+  originLatitude,
+  originLongitude,
+  destinationLatitude,
+  destinationLongitude,
+}) {
+  if (!isValidCity(originCity) || !isValidCity(destinationCity)) {
+    return {
+      error: 'Trip endpoints must resolve to supported regions.',
+    };
+  }
+
+  if (
+    originLatitude == null ||
+    originLongitude == null ||
+    destinationLatitude == null ||
+    destinationLongitude == null
+  ) {
+    return {
+      error: 'Exact origin and destination pins are required.',
+    };
+  }
+
+  const parsedOriginLatitude = Number(originLatitude);
+  const parsedOriginLongitude = Number(originLongitude);
+  const parsedDestinationLatitude = Number(destinationLatitude);
+  const parsedDestinationLongitude = Number(destinationLongitude);
+
+  if (
+    Number.isNaN(parsedOriginLatitude) ||
+    Number.isNaN(parsedOriginLongitude) ||
+    Number.isNaN(parsedDestinationLatitude) ||
+    Number.isNaN(parsedDestinationLongitude)
+  ) {
+    return {
+      error: 'Trip pins must include valid coordinates.',
+    };
+  }
+
+  if (
+    Math.abs(parsedOriginLatitude - parsedDestinationLatitude) < 0.0001 &&
+    Math.abs(parsedOriginLongitude - parsedDestinationLongitude) < 0.0001
+  ) {
+    return {
+      error: 'Origin and destination pins must be different.',
+    };
+  }
+
+  return {
+    parsedOriginLatitude,
+    parsedOriginLongitude,
+    parsedDestinationLatitude,
+    parsedDestinationLongitude,
+  };
+}
 
 async function createTripHandler(req, res) {
   const {
     originCity,
     destinationCity,
+    originLabel,
+    destinationLabel,
+    originLatitude,
+    originLongitude,
+    destinationLatitude,
+    destinationLongitude,
     departureTime,
     seatsAvailable,
     meetingSpot,
@@ -28,15 +91,26 @@ async function createTripHandler(req, res) {
   } = req.body;
 
   if (!originCity || !destinationCity || !departureTime || !seatsAvailable) {
-    return res.status(400).json({ error: 'Origin, destination, departure time, and seats available are required.' });
-  }
-
-  if (!isValidCity(originCity) || !isValidCity(destinationCity) || originCity === destinationCity) {
-    return res.status(400).json({ error: 'Trip cities must be different supported cities.' });
+    return res.status(400).json({
+      error: 'Origin, destination, departure time, and seats available are required.',
+    });
   }
 
   if (Number(seatsAvailable) < 1) {
     return res.status(400).json({ error: 'Seats available must be at least 1.' });
+  }
+
+  const validation = validatePinnedLocations({
+    originCity,
+    destinationCity,
+    originLatitude,
+    originLongitude,
+    destinationLatitude,
+    destinationLongitude,
+  });
+
+  if (validation.error) {
+    return res.status(400).json({ error: validation.error });
   }
 
   try {
@@ -51,6 +125,12 @@ async function createTripHandler(req, res) {
       driverId: req.user.id,
       originCity,
       destinationCity,
+      originLabel,
+      destinationLabel,
+      originLatitude: validation.parsedOriginLatitude,
+      originLongitude: validation.parsedOriginLongitude,
+      destinationLatitude: validation.parsedDestinationLatitude,
+      destinationLongitude: validation.parsedDestinationLongitude,
       departureTime,
       seatsAvailable: Number(seatsAvailable),
       meetingSpot,
@@ -67,6 +147,12 @@ async function updateTripHandler(req, res) {
   const {
     originCity,
     destinationCity,
+    originLabel,
+    destinationLabel,
+    originLatitude,
+    originLongitude,
+    destinationLatitude,
+    destinationLongitude,
     departureTime,
     seatsAvailable,
     meetingSpot,
@@ -80,18 +166,21 @@ async function updateTripHandler(req, res) {
     });
   }
 
-  if (
-    !isValidCity(originCity) ||
-    !isValidCity(destinationCity) ||
-    originCity === destinationCity
-  ) {
-    return res.status(400).json({
-      error: 'Trip cities must be different supported cities.',
-    });
-  }
-
   if (Number(seatsAvailable) < 0) {
     return res.status(400).json({ error: 'Seats available cannot be negative.' });
+  }
+
+  const validation = validatePinnedLocations({
+    originCity,
+    destinationCity,
+    originLatitude,
+    originLongitude,
+    destinationLatitude,
+    destinationLongitude,
+  });
+
+  if (validation.error) {
+    return res.status(400).json({ error: validation.error });
   }
 
   try {
@@ -111,6 +200,12 @@ async function updateTripHandler(req, res) {
       driverId: req.user.id,
       originCity,
       destinationCity,
+      originLabel,
+      destinationLabel,
+      originLatitude: validation.parsedOriginLatitude,
+      originLongitude: validation.parsedOriginLongitude,
+      destinationLatitude: validation.parsedDestinationLatitude,
+      destinationLongitude: validation.parsedDestinationLongitude,
       departureTime,
       seatsAvailable: Number(seatsAvailable),
       meetingSpot,
@@ -218,17 +313,17 @@ async function cancelTripHandler(req, res) {
     const rideRequests = await listRideRequestsForTrip(Number(req.params.id));
     await Promise.all(
       rideRequests
-          .filter((request) => request.status === 'accepted')
-          .map((request) =>
-            createNotification({
-              userId: request.rider_id,
-              type: 'trip_cancelled',
-              title: 'Trip cancelled',
-              body: 'A driver cancelled one of your upcoming trips.',
-              tripId: Number(req.params.id),
-              requestId: request.id,
-            }),
-          ),
+        .filter((request) => request.status === 'accepted')
+        .map((request) =>
+          createNotification({
+            userId: request.rider_id,
+            type: 'trip_cancelled',
+            title: 'Trip cancelled',
+            body: 'A driver cancelled one of your upcoming trips.',
+            tripId: Number(req.params.id),
+            requestId: request.id,
+          }),
+        ),
     );
 
     return res.json(updatedTrip);
@@ -257,7 +352,9 @@ async function completeTripHandler(req, res) {
     }
 
     if (new Date(trip.departure_time) > new Date()) {
-      return res.status(400).json({ error: 'Trips can only be completed after departure time.' });
+      return res.status(400).json({
+        error: 'Trips can only be completed after departure time.',
+      });
     }
 
     const updatedTrip = await completeTrip({
@@ -268,17 +365,18 @@ async function completeTripHandler(req, res) {
     const rideRequests = await listRideRequestsForTrip(Number(req.params.id));
     await Promise.all(
       rideRequests
-          .filter((request) => request.status === 'accepted')
-          .map((request) =>
-            createNotification({
-              userId: request.rider_id,
-              type: 'trip_completed',
-              title: 'Trip completed',
-              body: 'Your completed trip is now in history. Leave a review if you have not yet.',
-              tripId: Number(req.params.id),
-              requestId: request.id,
-            }),
-          ),
+        .filter((request) => request.status === 'accepted')
+        .map((request) =>
+          createNotification({
+            userId: request.rider_id,
+            type: 'trip_completed',
+            title: 'Trip completed',
+            body:
+              'Your completed trip is now in history. Leave a review if you have not yet.',
+            tripId: Number(req.params.id),
+            requestId: request.id,
+          }),
+        ),
     );
 
     return res.json(updatedTrip);

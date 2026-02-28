@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/city.dart';
 import '../models/request_summary.dart';
 import '../models/trip.dart' show Trip, formatDepartureTime;
 import '../state/app_state.dart';
@@ -173,16 +172,13 @@ class _TripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final origin = CollegeCity.fromApiValue(trip.originCity);
-    final destination = CollegeCity.fromApiValue(trip.destinationCity);
-
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         contentPadding: const EdgeInsets.all(18),
         title: _RouteHeader(
-          origin: origin.label,
-          destination: destination.label,
+          origin: trip.originDisplayLabel,
+          destination: trip.destinationDisplayLabel,
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 14),
@@ -238,16 +234,13 @@ class _RequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final origin = CollegeCity.fromApiValue(request.originCity);
-    final destination = CollegeCity.fromApiValue(request.destinationCity);
-
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         contentPadding: const EdgeInsets.all(18),
         title: _RouteHeader(
-          origin: origin.label,
-          destination: destination.label,
+          origin: request.originDisplayLabel,
+          destination: request.destinationDisplayLabel,
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 14),

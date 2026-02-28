@@ -1,10 +1,21 @@
+import 'city.dart';
 import 'ride_request.dart';
 
 String formatDepartureTime(DateTime dt) {
   final local = dt.toLocal();
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
   final minute = local.minute.toString().padLeft(2, '0');
@@ -18,6 +29,12 @@ class Trip {
     required this.driverId,
     required this.originCity,
     required this.destinationCity,
+    this.originLabel,
+    this.destinationLabel,
+    this.originLatitude,
+    this.originLongitude,
+    this.destinationLatitude,
+    this.destinationLongitude,
     required this.departureTime,
     required this.seatsAvailable,
     required this.status,
@@ -43,6 +60,12 @@ class Trip {
   final int driverId;
   final String originCity;
   final String destinationCity;
+  final String? originLabel;
+  final String? destinationLabel;
+  final double? originLatitude;
+  final double? originLongitude;
+  final double? destinationLatitude;
+  final double? destinationLongitude;
   final DateTime departureTime;
   final int seatsAvailable;
   final String status;
@@ -66,6 +89,14 @@ class Trip {
   bool get isFull => status == 'full' || seatsAvailable <= 0;
   bool get isCancelled => status == 'cancelled';
   bool get isCompleted => status == 'completed';
+  String get originDisplayLabel =>
+      (originLabel != null && originLabel!.trim().isNotEmpty)
+      ? originLabel!
+      : CollegeCity.labelForApiValue(originCity);
+  String get destinationDisplayLabel =>
+      (destinationLabel != null && destinationLabel!.trim().isNotEmpty)
+      ? destinationLabel!
+      : CollegeCity.labelForApiValue(destinationCity);
   bool get isHistory =>
       isCancelled ||
       isCompleted ||
@@ -79,6 +110,12 @@ class Trip {
       driverId: json['driver_id'] as int,
       originCity: json['origin_city'] as String,
       destinationCity: json['destination_city'] as String,
+      originLabel: json['origin_label'] as String?,
+      destinationLabel: json['destination_label'] as String?,
+      originLatitude: (json['origin_latitude'] as num?)?.toDouble(),
+      originLongitude: (json['origin_longitude'] as num?)?.toDouble(),
+      destinationLatitude: (json['destination_latitude'] as num?)?.toDouble(),
+      destinationLongitude: (json['destination_longitude'] as num?)?.toDouble(),
       departureTime: DateTime.parse(json['departure_time'] as String),
       seatsAvailable: json['seats_available'] as int,
       status: json['status'] as String? ?? 'open',

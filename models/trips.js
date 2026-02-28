@@ -5,6 +5,12 @@ const TRIP_SELECT_FIELDS = `SELECT
   t.driver_id,
   t.origin_city,
   t.destination_city,
+  t.origin_label,
+  t.destination_label,
+  t.origin_latitude,
+  t.origin_longitude,
+  t.destination_latitude,
+  t.destination_longitude,
   t.departure_time,
   t.seats_available,
   t.status,
@@ -37,6 +43,12 @@ async function createTrip({
   driverId,
   originCity,
   destinationCity,
+  originLabel,
+  destinationLabel,
+  originLatitude,
+  originLongitude,
+  destinationLatitude,
+  destinationLongitude,
   departureTime,
   seatsAvailable,
   meetingSpot,
@@ -47,18 +59,30 @@ async function createTrip({
        driver_id,
        origin_city,
        destination_city,
+       origin_label,
+       destination_label,
+       origin_latitude,
+       origin_longitude,
+       destination_latitude,
+       destination_longitude,
        departure_time,
        seats_available,
        status,
        meeting_spot,
        notes
      )
-     VALUES ($1, $2, $3, $4, $5, 'open', $6, $7)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'open', $12, $13)
      RETURNING *`,
     [
       driverId,
       originCity,
       destinationCity,
+      originLabel?.trim() || null,
+      destinationLabel?.trim() || null,
+      originLatitude ?? null,
+      originLongitude ?? null,
+      destinationLatitude ?? null,
+      destinationLongitude ?? null,
       departureTime,
       seatsAvailable,
       meetingSpot?.trim() || null,
@@ -74,6 +98,12 @@ async function updateTrip({
   driverId,
   originCity,
   destinationCity,
+  originLabel,
+  destinationLabel,
+  originLatitude,
+  originLongitude,
+  destinationLatitude,
+  destinationLongitude,
   departureTime,
   seatsAvailable,
   meetingSpot,
@@ -84,16 +114,22 @@ async function updateTrip({
      SET
        origin_city = $3,
        destination_city = $4,
-       departure_time = $5,
-       seats_available = $6,
-       meeting_spot = $7,
+       origin_label = $5,
+       destination_label = $6,
+       origin_latitude = $7,
+       origin_longitude = $8,
+       destination_latitude = $9,
+       destination_longitude = $10,
+       departure_time = $11,
+       seats_available = $12,
+       meeting_spot = $13,
        status = CASE
          WHEN status = 'cancelled' THEN 'cancelled'
          WHEN status = 'completed' THEN 'completed'
-         WHEN $6 = 0 THEN 'full'
+         WHEN $12 = 0 THEN 'full'
          ELSE 'open'
        END,
-       notes = $8
+       notes = $14
      WHERE id = $1 AND driver_id = $2
      RETURNING *`,
     [
@@ -101,6 +137,12 @@ async function updateTrip({
       driverId,
       originCity,
       destinationCity,
+      originLabel?.trim() || null,
+      destinationLabel?.trim() || null,
+      originLatitude ?? null,
+      originLongitude ?? null,
+      destinationLatitude ?? null,
+      destinationLongitude ?? null,
       departureTime,
       seatsAvailable,
       meetingSpot?.trim() || null,
@@ -132,7 +174,10 @@ async function findTripById(id, client = db) {
 
 async function findTripRowById(id, client = db) {
   const result = await client.query(
-    `SELECT id, driver_id, seats_available, status, departure_time, meeting_spot
+    `SELECT id, driver_id, seats_available, status, departure_time, meeting_spot,
+            origin_label, destination_label,
+            origin_latitude, origin_longitude,
+            destination_latitude, destination_longitude
      FROM trips
      WHERE id = $1`,
     [id],
@@ -152,7 +197,10 @@ async function updateTripSeatState({
        seats_available = $2,
        status = $3
      WHERE id = $1
-     RETURNING id, driver_id, seats_available, status, departure_time, meeting_spot`,
+     RETURNING id, driver_id, seats_available, status, departure_time, meeting_spot,
+               origin_label, destination_label,
+               origin_latitude, origin_longitude,
+               destination_latitude, destination_longitude`,
     [tripId, seatsAvailable, status],
   );
 
