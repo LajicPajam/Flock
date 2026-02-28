@@ -46,10 +46,6 @@ class AppState extends ChangeNotifier {
   List<Trip> get myTrips => _myTrips;
   List<RequestSummary> get myRequests => _myRequests;
   NotificationSummary get notifications => _notifications;
-  CarbonStats? get carbonStats => _carbonStats;
-  List<Trip> get myTrips => _myTrips;
-  List<RequestSummary> get myRequests => _myRequests;
-  NotificationSummary get notifications => _notifications;
 
   void clearError() {
     _errorMessage = null;

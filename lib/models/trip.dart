@@ -85,7 +85,6 @@ class Trip {
       driverAverageRating:
           (json['driver_average_rating'] as num?)?.toDouble() ?? 0,
       driverReviewCount: json['driver_review_count'] as int? ?? 0,
-      driverCarbonSavedGrams: json['driver_carbon_saved_grams'] as int? ?? 0,
       viewerRequest: json['viewer_request'] == null
           ? null
           : RideRequest.fromJson(
