@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
-import '../theme/app_colors.dart';
 import '../utils/phone_formatter.dart';
 import 'settings_screen.dart';
 import 'ui_shell.dart';
@@ -144,54 +143,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ],
       child: ListView(
         children: [
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF9FDDEB), Color(0xFFD8F3DC)],
+          const SizedBox(height: 24),
+          Center(
+            child: FractionallySizedBox(
+              widthFactor: 1,
+              child: Image.asset(
+                'assets/flock_logo.png',
+                height: 132,
+                fit: BoxFit.contain,
               ),
-              borderRadius: BorderRadius.circular(28),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.88),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.person_add_alt_1_rounded,
-                    color: AppColors.primaryGreen,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Image.asset(
-                  'assets/flock_logo.png',
-                  height: 30,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'Create your rider profile.',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'It only takes a minute. After signup, we will give you a quick walkthrough so the app makes sense right away.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textInk.withValues(alpha: 0.74),
-                    height: 1.4,
-                  ),
-                ),
-              ],
             ),
           ),
           const SizedBox(height: 16),
@@ -212,9 +172,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 6),
                     Text(
                       'Use a clear profile photo so drivers and riders can recognize you.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textInk.withValues(alpha: 0.66),
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
                     ),
                     const SizedBox(height: 18),
                     TextFormField(

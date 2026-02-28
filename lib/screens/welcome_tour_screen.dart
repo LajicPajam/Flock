@@ -24,7 +24,7 @@ class WelcomeTourScreen extends StatelessWidget {
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF8FD6E9), Color(0xFFD8F3DC)],
+                    colors: [AppColors.primaryGreen, Color(0xFF4A8A6A)],
                   ),
                   borderRadius: BorderRadius.circular(28),
                 ),
@@ -48,14 +48,14 @@ class WelcomeTourScreen extends StatelessWidget {
                       'Welcome to Flock',
                       style: textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textInk,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'A quick guide so your first ride request does not feel like guesswork.',
                       style: textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textInk.withValues(alpha: 0.74),
+                        color: Colors.white.withValues(alpha: 0.84),
                       ),
                     ),
                   ],

@@ -19,14 +19,15 @@ class CarbonStats {
     );
   }
 
-  CarbonTierLevel get tierLevel => CarbonTierLevel.fromGrams(totalCo2SavedGrams);
+  CarbonTierLevel get tierLevel =>
+      CarbonTierLevel.fromGrams(totalCo2SavedGrams);
 }
 
 enum CarbonTier {
   cloud('Cloud', Color(0xFFA0A0A0), Color(0xFFF7F9F8), '☁️'),
   sage('Sage', Color(0xFF6BBF7B), Color(0xFFD8F3DC), '🌿'),
   evergreen('Evergreen', Color(0xFF2D6A4F), Color(0xFF2D6A4F), '🌲'),
-  azure('Azure', Color(0xFF3A86FF), Color(0xFF3A86FF), '⚡');
+  canopy('Canopy', Color(0xFF1F513B), Color(0xFF1F513B), '⚡');
 
   const CarbonTier(this.label, this.barColor, this.uiColor, this.emoji);
 
@@ -41,7 +42,7 @@ enum CarbonTier {
       case CarbonTier.sage:
         return const Color(0xFF1E1E24);
       case CarbonTier.evergreen:
-      case CarbonTier.azure:
+      case CarbonTier.canopy:
         return Colors.white;
     }
   }
@@ -66,9 +67,9 @@ class CarbonTierLevel {
     (CarbonTier.evergreen, 1, 22000),
     (CarbonTier.evergreen, 2, 68000),
     (CarbonTier.evergreen, 3, 114000),
-    (CarbonTier.azure, 1, 160000),
-    (CarbonTier.azure, 2, 240000),
-    (CarbonTier.azure, 3, 320000),
+    (CarbonTier.canopy, 1, 160000),
+    (CarbonTier.canopy, 2, 240000),
+    (CarbonTier.canopy, 3, 320000),
   ];
 
   static CarbonTierLevel fromGrams(int grams) {
@@ -93,7 +94,7 @@ class CarbonTierLevel {
     return 0;
   }
 
-  /// Start of the next tier (grams), or cap for Azure.
+  /// Start of the next tier (grams), or cap for Canopy.
   int get tierEndGrams {
     final tierIndex = CarbonTier.values.indexOf(tier);
     if (tierIndex < CarbonTier.values.length - 1) {
@@ -139,7 +140,8 @@ class TangibleTranslation {
     if (kg < 1) {
       final charges = (grams / 8).round();
       return TangibleTranslation(
-        text: "You've saved ${grams}g of CO₂! That's like "
+        text:
+            "You've saved ${grams}g of CO₂! That's like "
             'charging your phone $charges times.',
         icon: Icons.smartphone,
       );
@@ -147,7 +149,8 @@ class TangibleTranslation {
     if (kg < 5) {
       final bottles = (grams / 83).round();
       return TangibleTranslation(
-        text: "You've saved ${kg.toStringAsFixed(1)}kg of CO₂! "
+        text:
+            "You've saved ${kg.toStringAsFixed(1)}kg of CO₂! "
             "That's equal to skipping $bottles single-use plastic bottles.",
         icon: Icons.water_drop_outlined,
       );
@@ -155,7 +158,8 @@ class TangibleTranslation {
     if (kg < 22) {
       final charges = (grams / 8).round();
       return TangibleTranslation(
-        text: "You've saved ${kg.toStringAsFixed(1)}kg of CO₂! "
+        text:
+            "You've saved ${kg.toStringAsFixed(1)}kg of CO₂! "
             "That's equal to charging your smartphone "
             '${_formatNumber(charges)} times.',
         icon: Icons.battery_charging_full,
@@ -164,7 +168,8 @@ class TangibleTranslation {
     if (kg < 100) {
       final trees = (kg / 22).toStringAsFixed(1);
       return TangibleTranslation(
-        text: "You've saved ${kg.toStringAsFixed(0)}kg of CO₂! "
+        text:
+            "You've saved ${kg.toStringAsFixed(0)}kg of CO₂! "
             "That's equal to $trees trees absorbing carbon for a full year.",
         icon: Icons.park,
       );
@@ -172,14 +177,16 @@ class TangibleTranslation {
     if (kg < 450) {
       final days = (kg / 14.9).round();
       return TangibleTranslation(
-        text: "You've saved ${kg.toStringAsFixed(0)}kg of CO₂! "
+        text:
+            "You've saved ${kg.toStringAsFixed(0)}kg of CO₂! "
             "That's like keeping a gas car off the road for $days days.",
         icon: Icons.directions_car_outlined,
       );
     }
     final months = (kg / 453).toStringAsFixed(1);
     return TangibleTranslation(
-      text: "You've saved ${kg.toStringAsFixed(0)}kg of CO₂! "
+      text:
+          "You've saved ${kg.toStringAsFixed(0)}kg of CO₂! "
           "That's equal to keeping a gas car parked for $months months.",
       icon: Icons.eco,
     );

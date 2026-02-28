@@ -52,7 +52,7 @@ class MyApp extends StatelessWidget {
               backgroundColor: AppColors.primaryAccent,
               foregroundColor: Colors.white,
               elevation: 2,
-              shadowColor: Color(0x223A86FF),
+              shadowColor: const Color(0x222D6A4F),
               minimumSize: const Size.fromHeight(54),
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
               shape: const StadiumBorder(),

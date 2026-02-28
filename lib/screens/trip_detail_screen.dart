@@ -388,6 +388,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
               if (!isDriver) ...[
                 Card(
                   child: Padding(
@@ -459,6 +460,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
               ],
               if (isDriver) ...[
                 Card(
@@ -555,6 +557,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
               ],
               if (canOpenMessages)
                 FilledButton.icon(

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,7 +11,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Sign In'), findsWidgets);
-    expect(find.text('Flock Carpool'), findsOneWidget);
+    expect(find.byIcon(Icons.settings), findsOneWidget);
     expect(find.text('New here? Create an account'), findsOneWidget);
   });
 }

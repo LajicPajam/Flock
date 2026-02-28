@@ -423,18 +423,9 @@ class _TripCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: AppColors.secondaryGreen,
-                    child: Text(
-                      trip.driverName.trim().isEmpty
-                          ? '?'
-                          : trip.driverName.trim()[0].toUpperCase(),
-                      style: const TextStyle(
-                        color: AppColors.primaryGreen,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                  _TripDriverAvatar(
+                    name: trip.driverName,
+                    photoUrl: trip.driverProfilePhotoUrl,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -519,6 +510,53 @@ class _TripCard extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _TripDriverAvatar extends StatelessWidget {
+  const _TripDriverAvatar({required this.name, required this.photoUrl});
+
+  final String name;
+  final String photoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
+
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: const BoxDecoration(
+        color: AppColors.secondaryGreen,
+        shape: BoxShape.circle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: photoUrl.isEmpty
+          ? Center(
+              child: Text(
+                initial,
+                style: const TextStyle(
+                  color: AppColors.primaryGreen,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            )
+          : Image.network(
+              photoUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Center(
+                  child: Text(
+                    initial,
+                    style: const TextStyle(
+                      color: AppColors.primaryGreen,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }
