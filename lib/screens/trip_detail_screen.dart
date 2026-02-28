@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../models/city.dart';
@@ -238,6 +240,14 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           final estimatedArrival = _estimateArrival(trip);
           final origin = CollegeCity.fromApiValue(trip.originCity);
           final destination = CollegeCity.fromApiValue(trip.destinationCity);
+          final originPoint = LatLng(
+            trip.originLatitude ?? origin.latitude,
+            trip.originLongitude ?? origin.longitude,
+          );
+          final destinationPoint = LatLng(
+            trip.destinationLatitude ?? destination.latitude,
+            trip.destinationLongitude ?? destination.longitude,
+          );
           return ListView(
             children: [
               Card(
@@ -279,17 +289,34 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text('Departure: ${formatDepartureTime(trip.departureTime)}'),
-                      Text(
-                        'Estimated arrival: ${formatDepartureTime(estimatedArrival)}',
+                      _TripDetailValueRow(
+                        label: 'Departure',
+                        value: formatDepartureTime(trip.departureTime),
                       ),
-                      Text('Seats available: ${trip.seatsAvailable}'),
-                      Text('Status: ${trip.status.toUpperCase()}'),
-                      Text(_etaLabel(estimatedArrival, trip.status)),
+                      _TripDetailValueRow(
+                        label: 'Estimated arrival',
+                        value: formatDepartureTime(estimatedArrival),
+                      ),
+                      _TripDetailValueRow(
+                        label: 'Seats available',
+                        value: '${trip.seatsAvailable}',
+                      ),
+                      _TripDetailStatusRow(status: trip.status),
+                      _TripDetailValueRow(
+                        label: 'ETA update',
+                        value: _etaLabelValue(estimatedArrival, trip.status),
+                      ),
                       if (!isDriver && trip.driverReviewCount > 0)
-                        Text(
-                          'Driver rating: ${trip.driverAverageRating.toStringAsFixed(1)} (${trip.driverReviewCount} reviews)',
+                        _TripDetailValueRow(
+                          label: 'Driver rating',
+                          value:
+                              '${trip.driverAverageRating.toStringAsFixed(1)} (${trip.driverReviewCount} reviews)',
                         ),
+                      const SizedBox(height: 12),
+                      _TripRouteMap(
+                        originPoint: originPoint,
+                        destinationPoint: destinationPoint,
+                      ),
                       if (isDriver) ...[
                         const SizedBox(height: 12),
                         Wrap(
@@ -604,26 +631,270 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     return trip.departureTime.toLocal().add(Duration(minutes: (hours * 60).round()));
   }
 
-  String _etaLabel(DateTime estimatedArrival, String status) {
+  String _etaLabelValue(DateTime estimatedArrival, String status) {
     if (status == 'cancelled') {
-      return 'ETA unavailable: trip cancelled';
+      return 'Trip cancelled';
     }
     if (status == 'completed') {
-      return 'Arrived (trip completed)';
+      return 'Arrived';
     }
 
     final diff = estimatedArrival.difference(_now);
     if (diff.inMinutes >= 0) {
       final hours = diff.inHours;
       final minutes = diff.inMinutes % 60;
-      return 'ETA update: arrives in ${hours}h ${minutes}m';
+      return 'Arrives in ${hours}h ${minutes}m';
     }
 
     final passed = _now.difference(estimatedArrival);
     if (passed.inMinutes < 15) {
-      return 'ETA update: arriving now';
+      return 'Arriving now';
     }
-    return 'ETA update: arrived ${passed.inHours}h ${passed.inMinutes % 60}m ago';
+    return 'Arrived ${passed.inHours}h ${passed.inMinutes % 60}m ago';
+  }
+}
+
+class _TripDetailValueRow extends StatelessWidget {
+  const _TripDetailValueRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final baseStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+      color: AppColors.textInk,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: RichText(
+        text: TextSpan(
+          style: baseStyle,
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            TextSpan(
+              text: value,
+              style: const TextStyle(fontWeight: FontWeight.w400),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TripDetailStatusRow extends StatelessWidget {
+  const _TripDetailStatusRow({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = status.toUpperCase();
+    var background = AppColors.secondaryGreen;
+    var foreground = AppColors.primaryGreen;
+
+    if (status == 'cancelled') {
+      background = const Color(0xFFFDEAEA);
+      foreground = const Color(0xFF9F2D2D);
+    } else if (status == 'full') {
+      background = const Color(0xFFF4EFE2);
+      foreground = const Color(0xFF7A5A12);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 2, bottom: 4),
+      child: Row(
+        children: [
+          const Text(
+            'Status: ',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textInk,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: foreground,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TripRouteMap extends StatelessWidget {
+  const _TripRouteMap({
+    required this.originPoint,
+    required this.destinationPoint,
+  });
+
+  final LatLng originPoint;
+  final LatLng destinationPoint;
+
+  @override
+  Widget build(BuildContext context) {
+    final center = LatLng(
+      (originPoint.latitude + destinationPoint.latitude) / 2,
+      (originPoint.longitude + destinationPoint.longitude) / 2,
+    );
+    final routeDistanceKm = CollegeCity.distanceKmBetween(
+      originPoint.latitude,
+      originPoint.longitude,
+      destinationPoint.latitude,
+      destinationPoint.longitude,
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: SizedBox(
+        height: 190,
+        child: Stack(
+          children: [
+            FlutterMap(
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: _zoomForDistance(routeDistanceKm),
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.none,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.lajicpajam.flock',
+                ),
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: [originPoint, destinationPoint],
+                      strokeWidth: 4,
+                      color: AppColors.primaryGreen,
+                    ),
+                  ],
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: originPoint,
+                      width: 34,
+                      height: 34,
+                      child: _MapPin(
+                        icon: Icons.play_arrow_rounded,
+                        backgroundColor: AppColors.primaryGreen,
+                      ),
+                    ),
+                    Marker(
+                      point: destinationPoint,
+                      width: 34,
+                      height: 34,
+                      child: _MapPin(
+                        icon: Icons.flag_rounded,
+                        backgroundColor: AppColors.textInk,
+                      ),
+                    ),
+                  ],
+                ),
+                const RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution('OpenStreetMap contributors'),
+                  ],
+                ),
+              ],
+            ),
+            Positioned(
+              left: 12,
+              top: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'Route overview',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static double _zoomForDistance(double distanceKm) {
+    if (distanceKm < 20) {
+      return 9.8;
+    }
+    if (distanceKm < 60) {
+      return 8.6;
+    }
+    if (distanceKm < 140) {
+      return 7.5;
+    }
+    if (distanceKm < 280) {
+      return 6.5;
+    }
+    if (distanceKm < 600) {
+      return 5.4;
+    }
+    if (distanceKm < 1200) {
+      return 4.5;
+    }
+    if (distanceKm < 2400) {
+      return 3.8;
+    }
+    return 3.2;
+  }
+}
+
+class _MapPin extends StatelessWidget {
+  const _MapPin({required this.icon, required this.backgroundColor});
+
+  final IconData icon;
+  final Color backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        shape: BoxShape.circle,
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x26000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Icon(icon, size: 18, color: Colors.white),
+    );
   }
 }
 

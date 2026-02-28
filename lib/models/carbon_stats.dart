@@ -55,7 +55,7 @@ class CarbonTierLevel {
   final int level; // 1, 2, or 3
 
   String get label => '${tier.label} ${'I' * level}';
-  String get badgeLabel => '${tier.emoji} ${tier.label} ${'I' * level}';
+  String get badgeLabel => label;
 
   static const _thresholds = [
     (CarbonTier.cloud, 1, 0),

@@ -23,7 +23,7 @@ class TierBadge extends StatelessWidget {
             : null,
       ),
       child: Text(
-        '${tl.tier.emoji} ${tl.label}',
+        tl.label,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
