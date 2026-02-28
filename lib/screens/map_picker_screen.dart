@@ -23,6 +23,7 @@ class MapPickerScreen extends StatefulWidget {
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
   final _locationService = LocationService();
+  final _mapController = MapController();
 
   late LatLng _selectedPoint;
   late LocationSelection _previewSelection;
@@ -30,6 +31,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   bool _confirming = false;
   bool _resolvingLabel = false;
   int _selectionToken = 0;
+
+  static const _supportedRadiusKm = 50.0;
 
   @override
   void initState() {
@@ -41,7 +44,67 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     _previewSelection = widget.initialSelection;
   }
 
+  void _selectPresetCity(CollegeCity city) {
+    final point = LatLng(city.latitude, city.longitude);
+    _selectPoint(point);
+    _mapController.move(point, 10);
+  }
+
   void _selectPoint(LatLng point) {
+    final nearestSupported = CollegeCity.nearestSupportedTo(
+      point.latitude,
+      point.longitude,
+    );
+    final distanceToSupported = CollegeCity.distanceKmBetween(
+      point.latitude,
+      point.longitude,
+      nearestSupported.latitude,
+      nearestSupported.longitude,
+    );
+
+    if (distanceToSupported > _supportedRadiusKm) {
+      _showUnsupportedCityDialog(point, nearestSupported, distanceToSupported);
+      return;
+    }
+
+    _applySelection(point);
+  }
+
+  void _showUnsupportedCityDialog(
+    LatLng tappedPoint,
+    CollegeCity nearestSupported,
+    double distanceKm,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Area not supported'),
+        content: Text(
+          'Flock only supports trips between college towns. The nearest supported city is ${nearestSupported.label} (about ${distanceKm.toStringAsFixed(0)} km away). Would you like to place the pin there instead?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              final point = LatLng(
+                nearestSupported.latitude,
+                nearestSupported.longitude,
+              );
+              _applySelection(point);
+              _mapController.move(point, 10);
+            },
+            child: Text('Use ${nearestSupported.label}'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _applySelection(LatLng point) {
     final matchedCity = CollegeCity.nearestTo(point.latitude, point.longitude);
     final token = ++_selectionToken;
 
@@ -150,9 +213,27 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       child: ListView(
         children: [
           Text(
-            'Tap anywhere on the map. Flock will save the exact pin and show a nearby place name.',
+            'Tap anywhere on the map, or choose a supported city below.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textInk.withValues(alpha: 0.72),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: CollegeCity.supportedCities.map((city) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ActionChip(
+                    label: Text(city.label),
+                    onPressed: () => _selectPresetCity(city),
+                    backgroundColor: AppColors.secondaryGreen,
+                    side: const BorderSide(color: AppColors.primaryGreen),
+                  ),
+                );
+              }).toList(),
             ),
           ),
           const SizedBox(height: 16),
@@ -161,6 +242,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             child: SizedBox(
               height: 420,
               child: FlutterMap(
+                mapController: _mapController,
                 options: MapOptions(
                   initialCenter: _selectedPoint,
                   initialZoom: 4.2,

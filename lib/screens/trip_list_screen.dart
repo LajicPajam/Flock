@@ -757,7 +757,7 @@ class _MenuRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20),
+        Icon(icon, size: 20, color: AppColors.primaryGreen),
         const SizedBox(width: 12),
         Expanded(child: Text(label)),
         if (count > 0)

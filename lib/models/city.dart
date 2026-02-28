@@ -54,6 +54,15 @@ enum CollegeCity {
   rexburgId('rexburg_id', 'Rexburg, ID', 43.8260, -111.7897),
   tempeAz('tempe_az', 'Tempe, AZ', 33.4255, -111.9400);
 
+  /// Cities supported by Flock for trip origins/destinations.
+  static const supportedCities = [
+    CollegeCity.provoUt,
+    CollegeCity.loganUt,
+    CollegeCity.saltLakeCityUt,
+    CollegeCity.rexburgId,
+    CollegeCity.tempeAz,
+  ];
+
   const CollegeCity(this.apiValue, this.label, this.latitude, this.longitude);
 
   final String apiValue;
@@ -74,6 +83,27 @@ enum CollegeCity {
     double nearestDistance = double.infinity;
 
     for (final city in CollegeCity.values) {
+      final distance = distanceKmBetween(
+        latitude,
+        longitude,
+        city.latitude,
+        city.longitude,
+      );
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = city;
+      }
+    }
+
+    return nearest;
+  }
+
+  /// Returns the nearest supported city to the given coordinates.
+  static CollegeCity nearestSupportedTo(double latitude, double longitude) {
+    CollegeCity nearest = supportedCities.first;
+    double nearestDistance = double.infinity;
+
+    for (final city in supportedCities) {
       final distance = distanceKmBetween(
         latitude,
         longitude,
